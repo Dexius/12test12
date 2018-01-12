@@ -16,8 +16,11 @@ DEFAULT_CONFIG = ".cointrader.ini"
 
 def get_path_to_config():
     env = os.getenv("HOME")
-    return os.path.join(env, DEFAULT_CONFIG)
-
+    if env:
+        return os.path.join(env, DEFAULT_CONFIG)
+    else:
+        # set default config file .cointrader.ini
+        return os.getcwd() + '\\.cointrader.ini'
 
 class Config(object):
 
@@ -29,7 +32,8 @@ class Config(object):
         self.api_secret = None
 
         if configfile:
-            logging.config.fileConfig(configfile.name)
+            # Set defaults='DEFAULT' as main
+            logging.config.fileConfig(configfile.name, defaults='DEFAULT')
             config = configparser.ConfigParser()
             config.readfp(configfile)
             exchange = config.get("DEFAULT", "exchange")

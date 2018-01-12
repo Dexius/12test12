@@ -161,3 +161,7 @@ main.add_command(explore)
 main.add_command(balance)
 main.add_command(exchange)
 main.add_command(start)
+
+# Запуск сценария
+if __name__ == "__main__":
+    main()

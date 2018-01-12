@@ -33,12 +33,11 @@ class Config(object):
 
         if configfile:
             # Set defaults='DEFAULT' as main
-            logging.config.fileConfig(configfile.name, defaults='DEFAULT')
+            # logging.config.fileConfig(configfile.name, defaults='DEFAULT')
             config = configparser.ConfigParser()
-            config.readfp(configfile)
-            exchange = config.get("DEFAULT", "exchange")
-            self.api_key = config.get(exchange, "api_key")
-            self.api_secret = config.get(exchange, "api_secret")
+            config.read_file(configfile)
+            self.api_key = config.get('DEFAULT', "api_key")
+            self.api_secret = config.get('DEFAULT', "api_secret")
 
     @property
     def api(self):

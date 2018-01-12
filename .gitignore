@@ -65,4 +65,4 @@ target/
 .python-version
 
 # No config
-cointrader\.cointrader.ini
+.cointrader.ini

@@ -4,6 +4,12 @@ import click
 import sys
 import logging
 import datetime
+
+import sys
+import os.path
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from cointrader import db, STRATEGIES
 from cointrader.config import Config, get_path_to_config
 from cointrader.exchange import Poloniex, BacktestMarket, Market

@@ -68,6 +68,7 @@ def load_bot(market, strategy, resolution, start, end, coins, fixcoin, verbose, 
         bot.min_count_btc = 0
         bot.min_count_currency = 0
         bot.percent = float(percent)
+        bot.detouch = False
 
         bot.strategy = str(strategy)
         btc, amount = replay_tradelog(bot.trades, market, bot._market)
@@ -105,6 +106,7 @@ def create_bot(market, strategy, resolution, start, end, btc, coins, fixcoin, ve
     bot.amount = amount / 100 * bot.percent
     bot.min_count_btc = 0
     bot.min_count_currency = 0
+    bot.detouch = False
 
     chart = market.get_chart(resolution, start, end)
     rate = chart.get_first_point()["close"]
@@ -246,6 +248,7 @@ class Cointrader(Base):
         self.amount = 0
         self.btc = 0
         self.fixcoin = fixcoin
+        self.detouch = False
         # The bot has either btc to buy or amount of coins to sell.
 
     def get_last_sell(self):
@@ -475,6 +478,10 @@ class Cointrader(Base):
                         self.state = 1
                         db.commit()
                         self.trades.append(trade)
+
+                        # Выводим статистику
+                        click.echo(render_bot_statistic(self.stat()))
+
                 elif signal.sell:
                     order_type = "SELL"
                     sel_tax = 0
@@ -490,7 +497,13 @@ class Cointrader(Base):
                         db.commit()
                         self.trades.append(trade)
 
+                        # Выводим статистику
+                        click.echo(render_bot_statistic(self.stat()))
 
+
+        stat = self.stat()
+        if round(stat['profit_cointrader'], 4) < -1:
+            self.detouch = True
 
         return result
 
@@ -609,6 +622,11 @@ class Cointrader(Base):
                     log.error("Не могу разметить ордер: {}".format(ex))
 
             if backtest:
+
+                if self.detouch:
+                    print("Бот отключен из-за падения курса")
+                    break
+
                 if not self._market.continue_backtest():
                     data = chart.data
                     df = pd.io.json.json_normalize(data)
@@ -682,6 +700,7 @@ class Cointrader(Base):
                         print("Тестирование завершено")
                     log.info("Тестирование завершено")
                     break
+
             else:
                 interval = 5
                 if interval > 0:

@@ -38,6 +38,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+.html
 htmlcov/
 .tox/
 .coverage
@@ -65,4 +66,8 @@ target/
 .python-version
 
 # No config
+.idea
 .cointrader.ini
+
+# No database
+.db

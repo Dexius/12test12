@@ -54,8 +54,22 @@ def render_bot_title(bot, market, chart):
 
     values["change_percent"] = round(change_percent, 4)
     values["url"] = market.url
+    # Если указаны монеты тогда выводим
+    if bot.coins:
+        values["amount"] = bot.coins
+    else:
+        values["amount"] =  bot.amount
+
+    if bot.min_count_currency > 0 and values["amount"] < bot.min_count_currency:
+        values["amount"] = bot.min_count_currency
+
+    balances = market._exchange.get_balance()
+    amount = balances[market.currency]["quantity"]
+
+    if bot.coins and amount - bot.coins < 0:
+        print("Для торговли запрошено %.6f монет, а в наличии, только %.6f." % (bot.coins, bot.amount))
     values["btc"] = bot.btc
-    values["amount"] = bot.amount
+
     values["currency"] = market.currency
     t = u"{date} [{btc} BTC {amount} {currency}] | {rate} ({change_percent}%) | {url}".format(**values)
     out.append("=" * len(t))
@@ -66,15 +80,15 @@ def render_bot_title(bot, market, chart):
 
 
 def render_bot_statistic(stat):
-    out = [["", stat["start"], stat["end"], "CHANGE %"]]
-    out.append(["COINTRADER", stat["trader_start_value"], stat["trader_end_value"], "{}".format(colorize_value(round(stat["profit_cointrader"], 4)))])
-    out.append(["MARKET", stat["market_start_value"], stat["market_end_value"], "{}".format(colorize_value(round(stat["profit_chart"], 4)))])
+    out = [["", stat["start"], stat["end"], "Изменение %"]]
+    out.append(["Бот", stat["trader_start_value"], stat["trader_end_value"], "{}".format(colorize_value(round(stat["profit_cointrader"], 4)))])
+    out.append(["Биржа", stat["market_start_value"], stat["market_end_value"], "{}".format(colorize_value(round(stat["profit_chart"], 4)))])
     table = AsciiTable(out).table
-    return "\n".join(["\nStatistic:", table])
+    return "\n".join(["\nСтатистика:", table])
 
 
 def render_bot_tradelog(trades):
-    out = [["DATE", "TYPE", "RATE", "COINS", "COINS'", "BTC", "BTC'"]]
+    out = [["ДАТА", "ТИП", "ЦЕНА", "МОНЕТЫ", "МОНЕТЫ'", "Биткоины", "Биткоины'"]]
     for trade in trades:
         values = []
         values.append(trade.date)

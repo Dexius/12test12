@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-import logging
-import logging.config
 if (sys.version_info > (3, 0)):
     # Python 3 code in this block
     import configparser
@@ -32,8 +30,6 @@ class Config(object):
         self.api_secret = None
 
         if configfile:
-            # Set defaults='DEFAULT' as main
-            # logging.config.fileConfig(configfile.name, defaults='DEFAULT')
             config = configparser.ConfigParser()
             config.read_file(configfile)
             self.api_key = config.get('DEFAULT', "api_key")

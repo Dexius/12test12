@@ -3,7 +3,7 @@
 import io
 import pandas
 import datetime
-from stockstats import StockDataFrame
+import stockstats
 
 
 def chart2csv(chart):
@@ -64,10 +64,11 @@ class Chart(object):
         :end: Datetime object.
 
         """
+
         self._data = data
         self._start = start
         self._end = end
-        self._stock = StockDataFrame.retype(pandas.read_csv(io.StringIO(chart2csv(data))))
+        self._stock = stockstats.StockDataFrame.retype(pandas.read_csv(io.StringIO(chart2csv(data))))
 
     @property
     def data(self):
@@ -95,8 +96,8 @@ class Chart(object):
     ################
 
     def macdh(self):
-        macdh = self._stock.get("macdh")
-        return macdh.tolist()
+        self._stock.get("macd")
+        return self._stock["macdh"].tolist()
 
     def sma(self, window=10):
         sma = self._stock.get("close_{}_sma".format(window))

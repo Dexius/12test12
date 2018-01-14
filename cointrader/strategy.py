@@ -17,10 +17,12 @@ class Strategy(object):
 
     def __init__(self):
         self.signals = {}
+        self.verbose = False
         """Dictionary with details on the signal(s)
         {"indicator": {"signal": 1, "details": Foo}}"""
 
-    def signal(self, chart):
+    def signal(self, chart, verbose = False):
+        self.verbose = verbose
         """Will return either a BUY, SELL or WAIT signal for the given
         market"""
         raise NotImplementedError
@@ -32,9 +34,10 @@ class NullStrategy(Strategy):
     SELL signal and is therefor the default strategy when starting
     cointrader to protect the user from loosing money by accident."""
 
-    def signal(self, chart):
+    def signal(self, chart, verbose = False):
         """Will return either a BUY, SELL or WAIT signal for the given
         market"""
+        self.verbose = verbose
         signal = Signal(WAIT, datetime.datetime.utcnow())
         self.signals["WAIT"] = signal
         return signal
@@ -42,12 +45,11 @@ class NullStrategy(Strategy):
 
 class Klondike(Strategy):
 
-    def signal(self, chart):
+    def signal(self, chart, verbose = False):
+        self.verbose = verbose
         signal = macdh_momententum(chart)
         self.signals["MACDH_MOMEMENTUM"] = signal
-        if signal.buy:
-            return signal
-        elif signal.sell:
+        if signal.buy or signal.sell:
             return signal
         return Signal(WAIT, datetime.datetime.utcfromtimestamp(chart.date))
 
@@ -58,8 +60,11 @@ class Followtrend(Strategy):
     def __init__(self):
         Strategy.__init__(self)
         self._macd = WAIT
+        self.verbose = False
 
-    def signal(self, chart):
+    def signal(self, chart, verbose = False):
+
+        self.verbose = verbose
         # Get current chart
         closing = chart.values()
 
@@ -80,13 +85,14 @@ class Followtrend(Strategy):
         # Finally we are using the double_cross signal as confirmation
         # of the former MACDH signal
         dc_signal = double_cross(chart)
-        if self._macd == BUY and dc_signal.value == BUY:
-            signal = dc_signal
-        elif self._macd == SELL and dc_signal.value == SELL:
+        if self._macd == (BUY and dc_signal.value == BUY) or (self._macd == SELL and dc_signal.value == SELL):
             signal = dc_signal
         else:
             signal = Signal(WAIT, dc_signal.date)
 
-        log.debug("Final signal @{}: {}".format(signal.date, signal.value))
+        # if self.verbose:
+        #     print("Итоговый сигнал @{}: {}".format(signal.date, signal.value))
+
+        log.debug("Итоговый сигнал @{}: {}".format(signal.date, signal.value))
         self.signals["DC"] = signal
         return signal

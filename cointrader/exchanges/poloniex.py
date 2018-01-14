@@ -9,6 +9,7 @@ import hashlib
 import requests
 import datetime
 
+
 if (sys.version_info > (3, 0)):
     # Python 3 code in this block
     from urllib.parse import urlencode
@@ -268,7 +269,7 @@ class Poloniex(Api):
         elif option == "postOnly":
             params["postOnly"] = 1
 
-        sign = hmac.new(str(self.secret), urlencode(params).encode(), hashlib.sha512).hexdigest()
+        sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
         headers = {"Key": self.key, "Sign": sign}
         r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
         result = json.loads(r.content.decode())
@@ -289,7 +290,7 @@ class Poloniex(Api):
         elif option == "postOnly":
             params["postOnly"] = 1
 
-        sign = hmac.new(str(self.secret), urlencode(params).encode(), hashlib.sha512).hexdigest()
+        sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
         headers = {"Key": self.key, "Sign": sign}
         r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
         result = json.loads(r.content.decode())

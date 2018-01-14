@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Импорт библиотек
 import click
 import sys
 import logging
@@ -10,7 +11,10 @@ from cointrader.exchanges.poloniex import ApiError
 from cointrader.bot import init_db, get_bot
 from cointrader.helpers import render_bot_statistic, render_bot_tradelog
 
+# Создание лога
+logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', level = logging.DEBUG, filename = u'cointrader.log')
 log = logging.getLogger(__name__)
+
 
 
 class Context(object):
@@ -20,11 +24,12 @@ class Context(object):
     def __init__(self):
         self.exchange = None
 
-
+# Создание пустого декоратора
 pass_context = click.make_pass_decorator(Context, ensure=True)
 
-
+# Создание группы команд
 @click.group()
+# Задаем параметры
 @click.option("--config", help="Configuration File for cointrader.", type=click.File("r"))
 @pass_context
 def main(ctx, config):
@@ -41,6 +46,7 @@ def main(ctx, config):
         sys.exit(1)
 
 
+# Добавляем команды
 @click.command()
 @click.option("--order-by-volume", help="Order markets by their trading volume", is_flag=True)
 @click.option("--order-by-profit", help="Order markets by their current profit", is_flag=True)
@@ -85,20 +91,23 @@ def balance(ctx):
     click.echo("{:<9}: {:>20}".format("TOTAL BTC", ctx.exchange.total_btc_value))
     click.echo("{:<9}: {:>20}".format("TOTAL USD", ctx.exchange.total_euro_value))
 
-
+# Добавляем команды
 @click.command()
 @click.argument("market")
 @click.option("--resolution", help="Resolution of the chart which is used for trend analysis", default="30m")
 @click.option("--start", help="Datetime to begin trading", default=None)
 @click.option("--end", help="Datetime to end trading", default=None)
+@click.option("--lastndays", help="backtest in the last N days", default=int)
 @click.option("--automatic", help="Start cointrader in automatic mode.", is_flag=True)
+@click.option("--papertrade", help="Just simulate the strategy on the chart.", is_flag=True)
 @click.option("--backtest", help="Just backtest the strategy on the chart.", is_flag=True)
-@click.option("--papertrade", help="Just simulate the trading.", is_flag=True)
-@click.option("--strategy", help="Stratgegy used for trading.", default="Wait", type=click.Choice(STRATEGIES.keys()))
+@click.option("--strategy", help="Stratgegy used for trading.", default="trend", type=click.Choice(STRATEGIES.keys()))
 @click.option("--btc", help="Set initial amount of BTC the bot will use for trading.", type=float)
 @click.option("--coins", help="Set initial amount of coint the bot will use for trading.", type=float)
+@click.option("--verbose", help="Вывод на экран логируемых сообщений.", is_flag=False)
+@click.option("--percent", help="Процент торговли от всей суммы.", is_flag=False)
 @pass_context
-def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, strategy, btc, coins):
+def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, strategy, btc, coins, verbose, percent, lastndays):
     """Start a new bot on the given market and the given amount of BTC"""
     # Check start and end date
     try:
@@ -109,6 +118,19 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     except ValueError:
         click.echo("Date is not valid. Must be in format 'YYYY-mm-dd HH:MM:SS'")
         sys.exit(1)
+
+    if lastndays:
+
+        try:
+            now_time = datetime.datetime.now()
+            delta = datetime.timedelta(days=int(lastndays))
+            date_N_days_ago = now_time - delta
+
+            start = date_N_days_ago
+            end = now_time
+        except ValueError:
+            click.echo("Days is not valid. Must be in 1 2 34 ...'")
+            sys.exit(1)
 
     # Build the market on which the bot will operate
     # First check if the given market is a valid market. If not exit
@@ -124,6 +146,7 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
         else:
             market = Market(ctx.exchange, market)
     else:
+
         click.echo("Market {} is not available".format(market))
         sys.exit(1)
 
@@ -138,7 +161,13 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     # Initialise a strategy.
     strategy = STRATEGIES[strategy]()
 
-    bot = get_bot(market, strategy, resolution, start, end, btc, coins)
+    # Устанановлен фиксированный количество монет
+    if coins:
+        fixcoin = True
+    else:
+        fixcoin = False
+
+    bot = get_bot(market, strategy, resolution, start, end, btc, coins, fixcoin, verbose, percent, automatic)
     bot.start(backtest, automatic)
 
     if backtest:

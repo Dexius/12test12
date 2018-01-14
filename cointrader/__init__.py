@@ -9,14 +9,16 @@ __author__ = """Torsten Irländer"""
 __email__ = 'torsten.irlaender@googlemail.com'
 __version__ = '0.5.0'
 
-Base = declarative_base()
 
+# Создаем базу данных декларативно
+Base = declarative_base()
+# Создаем файл в БД.
 engine = sa.create_engine('sqlite:///cointrader.db')
 Session = sa.orm.sessionmaker(bind=engine)
 db = Session()
 
 STRATEGIES = {
-    "null": NullStrategy,
+    # "null": NullStrategy,
     "trend": Followtrend,
     "klondike": Klondike
 }

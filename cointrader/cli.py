@@ -47,8 +47,8 @@ def main(ctx, config):
         config = Config(open(get_path_to_config(), "r"))
     try:
         ctx.exchange = Poloniex(config)
-    except ApiError as ex:
-        click.echo(ex.message)
+    except Exception as ex:
+        click.echo(ex)
         sys.exit(1)
 
 

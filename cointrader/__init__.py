@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
-from cointrader.strategy import NullStrategy
+# from cointrader.strategy import NullStrategy
 from cointrader.strategy import Followtrend
 from cointrader.strategy import Klondike
 

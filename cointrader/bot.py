@@ -264,9 +264,9 @@ class Cointrader(Base):
     def _buy(self):
         # Торгуем указанным количеством в парамтере *--coins*
         if self.coins:
-            amount = self.test_min_value(self.coins)
+            amount = self.test_min_value_btc(self.coins)
         else:
-            amount = self.test_min_value(self.amount)
+            amount = self.test_min_value_amount(self.amount)
 
         result = self._market.buy(self.btc)
         # {u'orderNumber': u'101983568396',
@@ -305,9 +305,9 @@ class Cointrader(Base):
     def _sell(self):
         # Торгуем указанным количеством в парамтере *--coins*
         if self.coins:
-            amount = self.test_min_value(self.coins)
+            amount = self.test_min_value_btc(self.coins)
         else:
-            amount = self.test_min_value(self.amount)
+            amount = self.test_min_value_btc(self.amount)
 
         result = self._market.sell(amount)
         # {u'orderNumber': u'101984509454',
@@ -344,13 +344,23 @@ class Cointrader(Base):
         self.btc = total_btc
         db.commit()
 
-    def test_min_value(self, amount):
-        if self.min_count_btc == 0 and self.min_count_btc < amount:
+    def test_min_value_btc(self, btc):
+        if self.min_count_btc == 0 and self.min_count_btc < btc:
+            pass
+        else:
+            if self.verbose:
+                print("Установлен минимальное доступное количество %f" % self.min_count_btc)
+                btc = self.min_count_btc
+        return btc
+
+
+    def test_min_value_amount(self, amount):
+        if self.min_count_currency == 0 and self.min_count_currency < amount:
             pass
         else:
             if self.verbose:
                 print("Установлен минимальное доступное количество %f" % self.min_count_currency)
-            amount = self.min_count_currency
+            amount = self.min_count_btc
         return amount
 
     def stat(self, delete_trades=False):
@@ -437,17 +447,22 @@ class Cointrader(Base):
         if not backtest:
             if signal.value == BUY or signal.value == SELL:
                 amount, btc = get_balance_amount_btc(self._market)
+                amount = amount - amount * 0.01
 
                 amount_diff = amount - self.amount
                 btc_diff = btc - self.btc
 
                 if amount_diff < 0 and signal.value == SELL:
+                    self.amount = amount
                     if self.verbose:
                         print("Не хватает на счету: %f в текущей валюте." % -amount_diff)
+                        print("Устанавливаем ставку: %f в текущей валюте." % amount)
                     result = 'Enough'
                 if btc_diff < 0 and signal.value == BUY:
+                    self.btc = btc
                     if self.verbose:
                         print("Не хватает на счету: %f BTC." % -btc_diff)
+                        print("Устанавливаем ставку: %f BTC." % -btc_diff)
                     result = 'Enough'
 
             if signal.value == BUY and self.btc and self._in_time(signal.date) and btc >= self.btc:
@@ -608,18 +623,23 @@ class Cointrader(Base):
                         self.active_trade_signal.append(signal.value)
 
                 except Exception as ex:
-                    min_count_btc = float(str(ex).split(" ")[-1][:-1])
-                    self.min_count_btc = min_count_btc
-
-                    btc_value = self._market._exchange.coins[self._market.currency].btc_value
-                    quantity = self._market._exchange.coins[self._market.currency].quantity
-                    price = btc_value / quantity
-                    self.min_count_currency = self.min_count_btc / price
-                    self.min_count_currency = self.min_count_currency + self.min_count_currency * 0.02
-
+                    print(ex)
                     if self.verbose:
                         print("Не могу разметить ордер: {}".format(ex))
                     log.error("Не могу разметить ордер: {}".format(ex))
+
+                    try:
+                        min_count_btc = float(str(ex).split(" ")[-1][:-1])
+                        self.min_count_btc = min_count_btc
+
+                        btc_value = self._market._exchange.coins[self._market.currency].btc_value
+                        quantity = self._market._exchange.coins[self._market.currency].quantity
+                        price = btc_value / quantity
+                        self.min_count_currency = self.min_count_btc / price
+                        self.min_count_currency = self.min_count_currency + self.min_count_currency * 0.02
+
+                    except Exception as ex:
+                        print("Ошибка: пополните незначительно кошелек " + str(ex))
 
             if backtest:
 
@@ -704,6 +724,6 @@ class Cointrader(Base):
             else:
                 interval = 5
                 if interval > 0:
-                    if self.verbose:
-                        print('Ожидание %.0fс ' % interval)
+                    # if self.verbose:
+                    #     print('Ожидание %.0fс ' % interval)
                     time.sleep(interval)

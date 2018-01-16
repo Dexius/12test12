@@ -546,7 +546,7 @@ class Cointrader(Base):
         interval = self._get_interval(automatic, backtest)
         chart_last = None
         while 1:
-            if chart_last == None and not backtest:
+            if chart_last == None and not backtest and automatic:
                 print("Синхронизируемся по времени свечи.")
                 while 1:
                     if chart_last == None:

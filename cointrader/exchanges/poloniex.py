@@ -246,7 +246,7 @@ class Poloniex(Api):
         given the balance of all currency are returned.
         """
         result = {}
-        params = {"command": "returnCompleteBalances", "nonce": int(time.time() * 1000)}
+        params = {"command": "returnCompleteBalances"}
         sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
         headers = {"Key": self.key, "Sign": sign}
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)

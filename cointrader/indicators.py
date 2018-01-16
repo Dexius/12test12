@@ -107,13 +107,13 @@ def double_cross(chart, fast=13, slow=26):
     ema_1 = chart.ema(fast)[-1]
     ema_2 = chart.ema(slow)[-1]
     if ema_1 > ema_2:
-        ema_diff = ema_2 - ema_1
-    elif ema_1 < ema_2:
         ema_diff = ema_1 - ema_2
+    elif ema_1 < ema_2:
+        ema_diff = ema_2 - ema_1
     else:
         ema_diff = 0.0
 
-    ema_diff = round(ema_diff, 6)
+    ema_diff = round(abs(ema_diff), 6)
 
     signal = WAIT
 

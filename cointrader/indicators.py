@@ -106,21 +106,33 @@ def double_cross(chart, fast=13, slow=26):
     date = datetime.datetime.utcfromtimestamp(closing[-1][0])
     ema_1 = chart.ema(fast)[-1]
     ema_2 = chart.ema(slow)[-1]
+    if ema_1 > ema_2:
+        ema_diff = ema_2 - ema_1
+    elif ema_1 < ema_2:
+        ema_diff = ema_1 - ema_2
+    else:
+        ema_diff = 0.0
+
+    ema_diff = round(ema_diff, 6)
+
     signal = WAIT
 
     if value > ema_1 and ema_1 > ema_2:
         signal = BUY
     elif value < ema_1 and ema_1 < ema_2:
         signal = SELL
+
     falling_trade = ema_1 < ema_2
     growing_trade = ema_1 > ema_2
+
     if falling_trade:
         trend = "Рынок ВНИЗ"
     elif growing_trade:
         trend = "Рынок ВВЕРХ"
     else:
         trend = "ПОВОРОТ"
-    print(signal, trend, date, "EMA{}: {}, EMA{}: {})".format(fast, ema_1, slow, ema_2), end=" ", flush=True)
+    print(signal, trend, date, "ВХОД:{} EMA{}: {}, EMA{}: {})".format(ema_diff, fast, ema_1, slow, ema_2), end=" ",
+          flush=True)
     return Signal(signal, date, "EMA{}: {}, EMA{}: {})".format(fast, ema_1, slow, ema_2))
 
 

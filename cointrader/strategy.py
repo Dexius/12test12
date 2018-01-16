@@ -81,6 +81,7 @@ class Followtrend(Strategy):
         if macdh_signal.value == SELL:
             self._macd = SELL
         log.debug("macdh signal: {}".format(self._macd))
+        print("MACD histogram signal: {}".format(self._macd),end=" ", flush=True)
 
         # Finally we are using the double_cross signal as confirmation
         # of the former MACDH signal
@@ -90,8 +91,8 @@ class Followtrend(Strategy):
         else:
             signal = Signal(WAIT, dc_signal.date)
 
-        # if self.verbose:
-        #     print("Итоговый сигнал @{}: {}".format(signal.date, signal.value))
+        if self.verbose:
+            print("Итоговый сигнал @{}: {}".format(signal.date, signal.value), end="\n", flush=True)
 
         log.debug("Итоговый сигнал @{}: {}".format(signal.date, signal.value))
         self.signals["DC"] = signal

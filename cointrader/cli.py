@@ -4,18 +4,18 @@ import click
 import sys
 import logging
 import datetime
-
 import sys
 import os.path
-
+import pandas as pd
+from terminaltables import AsciiTable
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
 from cointrader import db, STRATEGIES
 from cointrader.config import Config, get_path_to_config
 from cointrader.exchange import Poloniex, BacktestMarket, Market
 from cointrader.exchanges.poloniex import ApiError
 from cointrader.bot import init_db, get_bot
 from cointrader.helpers import render_bot_statistic, render_bot_tradelog
+
 
 # Создание лога
 logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', level = logging.DEBUG, filename = u'cointrader.log')
@@ -174,6 +174,26 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
         fixcoin = False
 
     bot = get_bot(market, strategy, resolution, start, end, btc, coins, fixcoin, verbose, percent, automatic)
+
+    df = pd.DataFrame.from_dict(bot._market._exchange.markets, orient='index')
+    df['change'] = df.change.astype(float)
+    df['volume'] = df.volume.astype(float)
+    df = df.sort_values(by=['volume', 'change'], ascending=False)
+    df_filtered = df[(df['volume'] > 5) & (df['change'] > 0)]
+    df_filtered = df_filtered.sort_values(by=['change'], ascending=False)
+
+    out = [["ПАРА", "ОБЪЕМ", "ИЗМЕНЕНИЯ"]]
+    for current_market, row in df_filtered.iterrows():
+        volume, change = (row['volume'], row['change'])
+        values = []
+        values.append(current_market)
+        values.append(volume)
+        values.append(str(change) + "%")
+        out.append(values)
+    table = AsciiTable(out).table
+
+    print("\n".join(["\nРастущий тренд:", table]))
+
     bot.start(backtest, automatic)
 
     if backtest:

@@ -146,7 +146,8 @@ class Poloniex(Api):
             }
         """
         params = {"command": "returnTicker"}
-        r = requests.get("https://poloniex.com/public", params=params)
+        # r = requests.get("https://poloniex.com/public", params=params)
+        r = reconnect("https://poloniex.com/public",params=params, headers=None, action="get")
         result = json.loads(r.content.decode())
         self._check_response(result)
         if currency:
@@ -166,7 +167,8 @@ class Poloniex(Api):
              ...}
         """
         params = {"command": "return24hVolume"}
-        r = requests.get("https://poloniex.com/public", params=params)
+        # r = requests.get("https://poloniex.com/public", params=params)
+        r = reconnect("https://poloniex.com/public",params=params, headers=None, action="get")
         result = json.loads(r.content.decode())
         self._check_response(result)
         if currency:
@@ -192,7 +194,8 @@ class Poloniex(Api):
                   "currencyPair": currency,
                   "depth": 10}
 
-        r = requests.get("https://poloniex.com/public", params=params)
+        # r = requests.get("https://poloniex.com/public", params=params)
+        r = reconnect("https://poloniex.com/public",params=params, headers=None, action="get")
         result = json.loads(r.content.decode())
         self._check_response(result)
         return result
@@ -232,7 +235,8 @@ class Poloniex(Api):
                   "end": ts_end,
                   "period": period}
 
-        r = requests.get("https://poloniex.com/public", params=params)
+        # r = requests.get("https://poloniex.com/public", params=params)
+        r = reconnect("https://poloniex.com/public",params=params, headers=None, action="get")
         result = json.loads(r.content.decode())
         self._check_response(result)
         return result
@@ -246,7 +250,8 @@ class Poloniex(Api):
         params = {"command": "returnCompleteBalances", "nonce": int(time.time() * 1000)}
         sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
         headers = {"Key": self.key, "Sign": sign}
-        r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
+        # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
+        r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
         tmp = json.loads(r.content.decode())
         self._check_response(tmp)
         for currency in tmp:
@@ -271,7 +276,8 @@ class Poloniex(Api):
 
         sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
         headers = {"Key": self.key, "Sign": sign}
-        r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
+        # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
+        r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
         result = json.loads(r.content.decode())
         self._check_response(result)
         return result
@@ -292,7 +298,26 @@ class Poloniex(Api):
 
         sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
         headers = {"Key": self.key, "Sign": sign}
-        r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
+        # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
+        r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
         result = json.loads(r.content.decode())
         self._check_response(result)
         return result
+
+def reconnect(link, params, headers=None, action="get"):
+    import requests
+    from urllib3.util.retry import Retry
+    from requests.adapters import HTTPAdapter
+
+    session = requests.Session()
+
+    retries = Retry(total=5,
+                    backoff_factor=0.1,
+                    status_forcelist=[500, 502, 503, 504])
+
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    if action == "get":
+        return session.get(link, params=params)
+    elif action == "post":
+        return session.post(link, data=params, headers=headers)

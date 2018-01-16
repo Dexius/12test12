@@ -103,7 +103,7 @@ def create_bot(market, strategy, resolution, start, end, btc, coins, fixcoin, ve
     # Setup the bot with coins and BTC.
     amount, btc = get_balance_amount_btc(market)
     bot.btc = btc / 100 * bot.percent
-    bot.amount = amount / 100 * bot.percent
+    bot.amount = amount  # / 100 * bot.percent
     bot.min_count_btc = 0.0
     bot.min_count_currency = 0.0
     bot.detouch = False

@@ -736,7 +736,7 @@ class Cointrader(Base):
 
             else:
                 # interval
-                if interval > 0:
+                if interval > 0 and automatic:
                     # if self.verbose:
                     #     print('Ожидание %.0fс ' % interval)
                     time.sleep(interval)

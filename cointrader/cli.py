@@ -8,6 +8,7 @@ import sys
 import os.path
 import pandas as pd
 from terminaltables import AsciiTable
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from cointrader import db, STRATEGIES
 from cointrader.config import Config, get_path_to_config
@@ -16,22 +17,22 @@ from cointrader.exchanges.poloniex import ApiError
 from cointrader.bot import init_db, get_bot
 from cointrader.helpers import render_bot_statistic, render_bot_tradelog
 
-
 # Создание лога
-logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', level = logging.DEBUG, filename = u'cointrader.log')
+logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG,
+                    filename=u'cointrader.log')
 log = logging.getLogger(__name__)
 
 
-
 class Context(object):
-
     """Docstring for Context. """
 
     def __init__(self):
         self.exchange = None
 
+
 # Создание пустого декоратора
 pass_context = click.make_pass_decorator(Context, ensure=True)
+
 
 # Создание группы команд
 @click.group()
@@ -39,7 +40,10 @@ pass_context = click.make_pass_decorator(Context, ensure=True)
 @click.option("--config", help="Configuration File for cointrader.", type=click.File("r"))
 @pass_context
 def main(ctx, config):
-    """Console script for cointrader on the Poloniex exchange"""
+    """Console script for cointrader on the Poloniex exchange
+    :param ctx:
+    :param config:
+    """
     init_db()
     if config:
         config = Config(config)
@@ -67,21 +71,27 @@ def explore(ctx, order_by_volume, order_by_profit, limit):
             url = "https://poloniex.com/exchange#{}".format(market[0].lower())
             click.echo("{:<10} {:>6}% {:>10} {:>20}".format(market[0], market[1]["change"], market[1]["volume"], url))
         if len(markets) == 0:
-            click.echo("Sorry. Can not find any market which is in the TOP{} for profit and trade volume. Try to increase the limit using the --limit parameter.".format(limit))
+            click.echo(
+                "Sorry. Can not find any market which is in the TOP{} for profit and trade volume. Try to increase the limit using the --limit parameter.".format(
+                    limit))
     elif order_by_volume:
         markets = ctx.exchange.get_top_volume_markets(markets, limit)
         for market in markets:
             url = "https://poloniex.com/exchange#{}".format(market[0].lower())
             click.echo("{:<10} {:>10} {:>6}% {:>20}".format(market[0], market[1]["volume"], market[1]["change"], url))
         if len(markets) == 0:
-            click.echo("Sorry. Can not find any market which is in the TOP{} for trade volume. Try to increase the limit using the --limit parameter.".format(limit))
+            click.echo(
+                "Sorry. Can not find any market which is in the TOP{} for trade volume. Try to increase the limit using the --limit parameter.".format(
+                    limit))
     elif order_by_profit:
         markets = ctx.exchange.get_top_profit_markets(markets, limit)
         for market in markets:
             url = "https://poloniex.com/exchange#{}".format(market[0].lower())
             click.echo("{:<10} {:>6}% {:>10} {:>20}".format(market[0], market[1]["change"], market[1]["volume"], url))
         if len(markets) == 0:
-            click.echo("Sorry. Can not find any market which is in the TOP{} for profit. Try to increase the limit using the --limit parameter.".format(limit))
+            click.echo(
+                "Sorry. Can not find any market which is in the TOP{} for profit. Try to increase the limit using the --limit parameter.".format(
+                    limit))
 
 
 @click.command()
@@ -96,6 +106,7 @@ def balance(ctx):
     click.echo("{}".format("-" * 31))
     click.echo("{:<9}: {:>20}".format("TOTAL BTC", ctx.exchange.total_btc_value))
     click.echo("{:<9}: {:>20}".format("TOTAL USD", ctx.exchange.total_euro_value))
+
 
 # Добавляем команды
 @click.command()
@@ -113,13 +124,29 @@ def balance(ctx):
 @click.option("--verbose", help="Вывод на экран логируемых сообщений.", is_flag=False)
 @click.option("--percent", help="Процент торговли от всей суммы.", is_flag=False)
 @pass_context
-def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, strategy, btc, coins, verbose, percent, lastndays):
-    """Start a new bot on the given market and the given amount of BTC"""
+def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, strategy, btc, coins, verbose, percent,
+          lastndays):
+    """Start a new bot on the given market and the given amount of BTC
+    :param ctx:
+    :param market:
+    :param resolution:
+    :param start:
+    :param end:
+    :param automatic:
+    :param backtest:
+    :param papertrade:
+    :param strategy:
+    :param btc:
+    :param coins:
+    :param verbose:
+    :param percent:
+    :param lastndays:
+    """
     # Check start and end date
     try:
         if start:
             start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-        if end:
+        elif end:
             end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
     except ValueError:
         click.echo("Date is not valid. Must be in format 'YYYY-mm-dd HH:MM:SS'")

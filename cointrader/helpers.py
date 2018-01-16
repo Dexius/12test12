@@ -112,4 +112,4 @@ def render_bot_tradelog(trades):
         out.append(values)
     table = AsciiTable(out).table
 
-    return "\n".join(["\nTradelog:", table])
+    return "\n".join(["\n:Журнал сделок:", table])

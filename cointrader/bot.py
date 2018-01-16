@@ -235,6 +235,7 @@ class Cointrader(Base):
     def __init__(self, market, strategy, resolution="30m", start=None, end=None, automatic=False, coins=10,
                  fixcoin=False):
 
+        self.verbose = False
         self.market = market._name
         self.strategy = str(strategy)
         self.automatic = automatic
@@ -262,11 +263,11 @@ class Cointrader(Base):
                 return t
 
     def _buy(self):
-        # Торгуем указанным количеством в парамтере *--coins*
-        if self.coins:
-            amount = self.test_min_value_btc(self.coins)
-        else:
-            amount = self.test_min_value_amount(self.amount)
+        # # Торгуем указанным количеством в парамтере *--coins*
+        # if self.coins:
+        #     amount = self.test_min_value_btc(self.coins)
+        # else:
+        #     amount = self.test_min_value_amount(self.amount)
 
         result = self._market.buy(self.btc)
         # {u'orderNumber': u'101983568396',
@@ -303,13 +304,13 @@ class Cointrader(Base):
         db.commit()
 
     def _sell(self):
-        # Торгуем указанным количеством в парамтере *--coins*
-        if self.coins:
-            amount = self.test_min_value_btc(self.coins)
-        else:
-            amount = self.test_min_value_btc(self.amount)
+        # # Торгуем указанным количеством в парамтере *--coins*
+        # if self.coins:
+        #     amount = self.test_min_value_btc(self.coins)
+        # else:
+        #     amount = self.test_min_value_btc(self.amount)
 
-        result = self._market.sell(amount)
+        result = self._market.sell(self.amount)
         # {u'orderNumber': u'101984509454',
         #  u'resultingTrades': [{u'tradeID': u'10337105',
         #                        u'rate': u'0.01458758',
@@ -319,7 +320,7 @@ class Cointrader(Base):
         #                        u'type': u'sell'}]}
         order_id = result["orderNumber"]
         order_type = "SELL"
-        total_btc = 0
+        total_btc = 0.0
 
         if result and self.verbose:
             print("orderNumber: %s, операция: %s, всего: %f" % (order_id,
@@ -330,35 +331,29 @@ class Cointrader(Base):
         for t in result["resultingTrades"]:
             trade_id = t["tradeID"]
             date = t["date"]
-            amount = t["amount"]
-            rate = t["rate"]
-            btc = t["total"]
+            amount = float(t["amount"])
+            rate = float(t["rate"])
+            btc = float(t["total"])
             total_btc += float(btc)
             trade = Trade(date, order_type, order_id, trade_id, self._market._name, rate, self.amount, amount, 0, btc)
             self.trades.append(trade)
 
         # Finally set the internal state of the bot. Amount will be 0 after
         # selling but we now have some BTC.
-        self.state = 0
-        self.amount = 0
+        self.state = 0.0
+        self.amount = 0.0
         self.btc = total_btc
         db.commit()
 
     def test_min_value_btc(self, btc):
-        if self.min_count_btc == 0 and self.min_count_btc < btc:
-            pass
-        else:
-            if self.verbose:
-                print("Установлен минимальное доступное количество %f" % self.min_count_btc)
-                btc = self.min_count_btc
+        if not (self.min_count_btc == 0.0 and self.min_count_btc < btc) and self.verbose:
+            print("Установлен минимальное доступное количество %f" % self.min_count_btc)
+            btc = self.min_count_btc
         return btc
 
     def test_min_value_amount(self, amount):
-        if self.min_count_currency == 0 and self.min_count_currency < amount:
-            pass
-        else:
-            if self.verbose:
-                print("Установлен минимальное доступное количество %f" % self.min_count_currency)
+        if not (self.min_count_currency == 0 and self.min_count_currency < amount) and self.verbose:
+            print("Установлен минимальное доступное количество %f" % self.min_count_currency)
             amount = self.min_count_btc
         return amount
 
@@ -374,6 +369,7 @@ class Cointrader(Base):
         some good decisions and increases eater btc or amount of coins
         of the bot the performance should be better."""
 
+        global trader_start_btc
         chart = self._market.get_chart(self._resolution, self._start, self._end)
 
         first = chart.get_first_point()
@@ -442,6 +438,7 @@ class Cointrader(Base):
         return interval
 
     def _handle_signal(self, signal, backtest, chart):
+        global can_buy, can_sell
         result = 'No action'
         if not backtest:
             if signal.value == BUY or signal.value == SELL:
@@ -515,7 +512,6 @@ class Cointrader(Base):
                     if self.btc:
                         order_type = "BUY"
                         total_amount = self.btc / _value
-                        buy_tax = 0
                         total_count = self.amount + total_amount * _value
                         trade = Trade(_date, order_type, '11111111', '111111111', self._market._name, _value, 0,
                                       total_amount, self.btc, total_count)
@@ -532,7 +528,6 @@ class Cointrader(Base):
 
                 elif signal.sell:
                     order_type = "SELL"
-                    sel_tax = 0
                     if self.amount:
                         total_btc = self.btc + self.amount * _value
                         trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
@@ -638,7 +633,7 @@ class Cointrader(Base):
                     signal = Signal(WAIT, datetime.datetime.utcnow())
 
             if automatic:
-                pass
+                """ TODO: """
 
             if signal:
                 try:
@@ -675,7 +670,7 @@ class Cointrader(Base):
                             self.min_count_btc = min_count_btc
 
                             # Берем актуальную цену сделки
-                            price = chart._data[-1]['close']
+                            price = float(chart._data[-1]['close'])
 
                             # Устанавливаем минимальную цену сделки
                             self.min_count_currency = self.min_count_btc / price
@@ -697,7 +692,6 @@ class Cointrader(Base):
                     df = df[['close', 'date', 'high', 'low', 'open', 'volume', 'weightedAverage']]
 
                     from stockstats import StockDataFrame
-                    from math import pi
                     from bokeh.plotting import figure, show, output_notebook, output_file
 
                     from_symbol = 'BTC'

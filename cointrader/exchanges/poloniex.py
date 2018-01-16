@@ -260,12 +260,12 @@ class Poloniex(Api):
         return result
 
     def buy(self, market, amount, price, option):
-        correct_number = 1.00000005616
+
         params = {"command": "buy",
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": 1466943020524412 + int(time.time() * 1000)}
+                  "nonce": int(1466943020524412 + int(time.time() * 1000))}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1
@@ -287,7 +287,7 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": 1466943020524412 + int(time.time() * 1000)}
+                  "nonce": int(1466943020524412 + int(time.time() * 1000))}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1

@@ -115,9 +115,8 @@ class Api(object):
 
 
 class Poloniex(Api):
-
-    MAKER_FEE = 0
-    TAKER_FEE = 0
+    MAKER_FEE = 0.0015
+    TAKER_FEE = 0.0025
     # So-called maker-taker fees offer a transaction rebate to those who
     # provide liquidity (the market maker), while charging customers who
     # take that liquidity. The chief aim of maker-taker fees is to stimulate
@@ -266,7 +265,7 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": 1465426902234426 + int(time.time() * 1000 * correct_number)}
+                  "nonce": 1466943020524412 + int(time.time() * 1000 * correct_number)}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1

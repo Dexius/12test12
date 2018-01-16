@@ -281,25 +281,26 @@ class Cointrader(Base):
         total_amount = 0
 
         if result and self.verbose:
-            print("orderNumber: %s, операция: %s, всего: %f" % (order_id,
-                                                                order_id['resultingTrades']['type'],
-                                                                order_id['resultingTrades']['total']
-                                                                ))
+            for trade in result['resultingTrades']:
+                print("orderNumber: %s, операция: %s, всего: %s" % (order_id,
+                                                                    trade['type'],
+                                                                    trade['total']
+                                                                    ))
 
         for t in result["resultingTrades"]:
             trade_id = t["tradeID"]
             date = t["date"]
-            amount = t["amount"]
+            amount = float(t["amount"])
             total_amount += float(amount)
-            rate = t["rate"]
-            btc = t["total"]
+            rate = float(t["rate"])
+            btc = float(t["total"])
             trade = Trade(date, order_type, order_id, trade_id, self._market._name, rate, 0, amount, self.btc, btc)
             self.trades.append(trade)
 
         # Finally set the internal state of the bot. BTC will be 0 after
         # buying but we now have some amount of coins.
         self.amount = total_amount
-        self.btc = 0
+        self.btc = 0.0
         self.state = 1
         db.commit()
 
@@ -323,10 +324,11 @@ class Cointrader(Base):
         total_btc = 0.0
 
         if result and self.verbose:
-            print("orderNumber: %s, операция: %s, всего: %f" % (order_id,
-                                                                order_id['resultingTrades']['type'],
-                                                                order_id['resultingTrades']['total']
-                                                                ))
+            for trade in result['resultingTrades']:
+                print("orderNumber: %s, операция: %s, всего: %s" % (order_id,
+                                                                    trade['type'],
+                                                                    trade['total']
+                                                                    ))
 
         for t in result["resultingTrades"]:
             trade_id = t["tradeID"]
@@ -610,7 +612,7 @@ class Cointrader(Base):
                 """ TODO: """
 
             if signal:
-                # try:
+                try:
                     if not self.active_trade_signal:
                         self.active_trade_signal.append(WAIT)
 
@@ -631,27 +633,27 @@ class Cointrader(Base):
                         # Записываем текущий активный сигнал в *active_trade_signal*
                         self.active_trade_signal.append(signal.value)
 
-            # except Exception as ex:
-            #     # Выводим ошибку выполнения
-            #     if self.verbose:
-            #         print("Не могу разметить ордер: {}".format(ex))
-            #     log.error("Не могу разметить ордер: {}".format(ex))
-            #
-            #     # Пробую вычислить лимит сделки в BTC
-            #     try:
-            #         if signal.value == BUY or signal.value == SELL:
-            #             min_count_btc = float(str(ex).split(" ")[-1][:-1])
-            #             self.min_count_btc = min_count_btc
-            #
-            #             # Берем актуальную цену сделки
-            #             price = float(chart._data[-1]['close'])
-            #
-            #             # Устанавливаем минимальную цену сделки
-            #             self.min_count_currency = self.min_count_btc / price
-            #             self.min_count_currency = self.min_count_currency + self.min_count_currency * 0.02
-            #
-            #     except Exception as ex:
-            #         print("Ошибка: " + str(ex))
+            except Exception as ex:
+                # Выводим ошибку выполнения
+                if self.verbose:
+                    print("Не могу разметить ордер: {}".format(ex))
+                log.error("Не могу разметить ордер: {}".format(ex))
+
+                # Пробую вычислить лимит сделки в BTC
+                try:
+                    if signal.value == BUY or signal.value == SELL:
+                        min_count_btc = float(str(ex).split(" ")[-1][:-1])
+                        self.min_count_btc = min_count_btc
+
+                        # Берем актуальную цену сделки
+                        price = float(chart._data[-1]['close'])
+
+                        # Устанавливаем минимальную цену сделки
+                        self.min_count_currency = self.min_count_btc / price
+                        self.min_count_currency = self.min_count_currency + self.min_count_currency * 0.02
+
+                except Exception as ex:
+                    print("Ошибка: " + str(ex))
 
             if backtest:
 

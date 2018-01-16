@@ -459,10 +459,10 @@ class Cointrader(Base):
 
                 can_buy = min_btc_trade < self.btc
                 if not can_buy and self.btc > 0:
-                    print('ПОКУПКА: Сумма меньше ограничения биржи и составляет: %f.', self.btc)
+                    print('ПОКУПКА: Сумма меньше ограничения биржи и составляет: %f.' % self.btc)
                 can_sell = min_amount_trade < self.amount
                 if not can_sell and self.amount > 0:
-                    print('ПРОДАЖА: Сумма меньше ограничения биржи и составляет: %f.', self.amount)
+                    print('ПРОДАЖА: Сумма меньше ограничения биржи и составляет: %f.' % self.amount)
 
             if signal.value == BUY and self._in_time(signal.date) and can_buy:
                 self._buy()
@@ -736,7 +736,7 @@ class Cointrader(Base):
 
             else:
                 # interval
-                if interval > 0 and automatic:
+                if interval > 0:
                     # if self.verbose:
                     #     print('Ожидание %.0fс ' % interval)
                     time.sleep(interval)

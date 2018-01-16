@@ -115,11 +115,11 @@ def double_cross(chart, fast=13, slow=26):
     falling_trade = ema_1 < ema_2
     growing_trade = ema_1 > ema_2
     if falling_trade:
-        trend = -1
-    if growing_trade:
-        trend = 1
+        trend = "Рынок ВНИЗ"
+    elif growing_trade:
+        trend = "Рынок ВВЕРХ"
     else:
-        trend = 0
+        trend = "ПОВОРОТ"
     print(signal, trend, date, "EMA{}: {}, EMA{}: {})".format(fast, ema_1, slow, ema_2), end=" ", flush=True)
     return Signal(signal, date, "EMA{}: {}, EMA{}: {})".format(fast, ema_1, slow, ema_2))
 

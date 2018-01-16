@@ -457,30 +457,6 @@ class Cointrader(Base):
                 price = chart._data[-1]['close']
                 min_amount_trade = min_btc_trade / price
 
-                # amount = (amount - amount * 0.01) * 0.01 * self.percent
-                #
-                # btc = (btc - btc * 0.01) * 0.01 * self.percent
-                #
-                # amount_diff = amount - self.amount
-                # btc_diff = btc - self.btc
-                #
-                # if amount_diff < 0 and signal.value == SELL:
-                #     self.amount = amount
-                #     if self.verbose:
-                #         print("Не хватает на счету: %f COINS. "
-                #               "Устанавливаем ставку: %f COINS."
-                #               % (-amount_diff, amount))
-                #     result = 'Enough'
-                # elif btc_diff < 0 and signal.value == BUY:
-                #     self.btc = btc
-                #     if self.verbose:
-                #         print("Не хватает на счету: %f BTC. "
-                #               "Устанавливаем ставку: %f BTC."
-                #               % (-btc_diff, btc))
-                #     result = 'Enough'
-                # else:
-                #     result = 'Trade'
-
                 can_buy = min_btc_trade < self.btc
                 if not can_buy:
                     print("ПОКУПКА: Сумма меньше ограничения биржи. %f  ")
@@ -604,11 +580,9 @@ class Cointrader(Base):
                 click.echo(render_user_options(options))
                 c = input()
                 if c == 'b' and self.btc:
-                    # btc = click.prompt('BTC', default=self.self.btc)
                     if click.confirm('Buy for {} btc?'.format(self.btc)):
                         signal = Signal(BUY, datetime.datetime.utcnow())
                 elif c == 's' and self.amount:
-                    # amount = click.prompt('Amount', default=self.self.amount)
                     if (self.min_count_currency == 0 or self.amount > self.min_count_currency):
                         amount = self.amount
                     else:

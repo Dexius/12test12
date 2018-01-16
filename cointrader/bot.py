@@ -633,27 +633,27 @@ class Cointrader(Base):
                         # Записываем текущий активный сигнал в *active_trade_signal*
                         self.active_trade_signal.append(signal.value)
 
-            except Exception as ex:
-                # Выводим ошибку выполнения
-                if self.verbose:
-                    print("Не могу разметить ордер: {}".format(ex))
-                log.error("Не могу разметить ордер: {}".format(ex))
-
-                # Пробую вычислить лимит сделки в BTC
-                try:
-                    if signal.value == BUY or signal.value == SELL:
-                        min_count_btc = float(str(ex).split(" ")[-1][:-1])
-                        self.min_count_btc = min_count_btc
-
-                        # Берем актуальную цену сделки
-                        price = float(chart._data[-1]['close'])
-
-                        # Устанавливаем минимальную цену сделки
-                        self.min_count_currency = self.min_count_btc / price
-                        self.min_count_currency = self.min_count_currency + self.min_count_currency * 0.02
-
                 except Exception as ex:
-                    print("Ошибка: " + str(ex))
+                    # Выводим ошибку выполнения
+                    if self.verbose:
+                        print("Не могу разметить ордер: {}".format(ex))
+                    log.error("Не могу разметить ордер: {}".format(ex))
+
+                    # Пробую вычислить лимит сделки в BTC
+                    try:
+                        if signal.value == BUY or signal.value == SELL:
+                            min_count_btc = float(str(ex).split(" ")[-1][:-1])
+                            self.min_count_btc = min_count_btc
+
+                            # Берем актуальную цену сделки
+                            price = float(chart._data[-1]['close'])
+
+                            # Устанавливаем минимальную цену сделки
+                            self.min_count_currency = self.min_count_btc / price
+                            self.min_count_currency = self.min_count_currency + self.min_count_currency * 0.02
+
+                    except Exception as ex:
+                        print("Ошибка: " + str(ex))
 
             if backtest:
 

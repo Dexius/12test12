@@ -369,7 +369,7 @@ class Cointrader(Base):
         some good decisions and increases eater btc or amount of coins
         of the bot the performance should be better."""
 
-        global trader_start_btc
+        global trader_start_btc, trader_start_amount
         chart = self._market.get_chart(self._resolution, self._start, self._end)
 
         first = chart.get_first_point()

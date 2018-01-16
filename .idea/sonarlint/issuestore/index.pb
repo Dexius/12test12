@@ -17,7 +17,3 @@ D
 :
 
 .gitignore,a\5\a5cc2925ca8258af241be7e5b0381edf30266302
->
-DF_download.py,9\f\9fe44250a46f44de5e9203d3623a9793b13084d5
-S
-#BTC_USD_Bitstamp_day_2018-01-12.csv,e\2\e2f3b0b62103f25bc5e87754bc34052cc345f379

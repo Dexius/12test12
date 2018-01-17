@@ -32,6 +32,7 @@ class Api(object):
 
     def __init__(self, config):
         api = config.api
+        self.enableRateLimit = True
         self.key = api[0]
         self.secret = api[1].encode()
 

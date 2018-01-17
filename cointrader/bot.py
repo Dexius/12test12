@@ -474,17 +474,17 @@ class Cointrader(Base):
                 if not can_sell and self.amount > 0:
                     print('ПРОДАЖА: Сумма меньше ограничения биржи и составляет: %f.' % self.amount)
 
-            if signal.value == BUY and self._in_time(signal.date) and can_buy:
-                self._buy()
-                result = 'Buy'
-                # Выводим статистику
-                click.echo(render_bot_statistic(self.stat()))
+                if signal.value == BUY and self._in_time(signal.date) and can_buy:
+                    self._buy()
+                    result = 'Buy'
+                    # Выводим статистику
+                    click.echo(render_bot_statistic(self.stat()))
 
-            elif signal.value == SELL and self._in_time(signal.date) and can_sell:
-                self._sell()
-                result = 'Sell'
-                # Выводим статистику
-                click.echo(render_bot_statistic(self.stat()))
+                elif signal.value == SELL and self._in_time(signal.date) and can_sell:
+                    self._sell()
+                    result = 'Sell'
+                    # Выводим статистику
+                    click.echo(render_bot_statistic(self.stat()))
 
 
         else:

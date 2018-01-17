@@ -262,6 +262,14 @@ class Cointrader(Base):
             if t.order_type == "BUY":
                 return t
 
+    def check_actual_amount(self, amount):
+        actual_amount, btc = get_balance_amount_btc(self._market)
+        if amount < actual_amount:
+            print("Расчетная покупка: %s факт: %s" % (amount, actual_amount))
+            return actual_amount
+
+        return amount
+
     def _buy(self):
         # # Торгуем указанным количеством в парамтере *--coins*
         # if self.coins:
@@ -299,7 +307,7 @@ class Cointrader(Base):
 
         # Finally set the internal state of the bot. BTC will be 0 after
         # buying but we now have some amount of coins.
-        self.amount = total_amount
+        self.amount = Cointrader.check_actual_amount(total_amount)
         self.btc = 0.0
         self.state = 1
         db.commit()

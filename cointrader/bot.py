@@ -744,9 +744,8 @@ class Cointrader(Base):
                     log.info("Тестирование завершено")
                     break
 
-            else:
-                # interval
-                if interval > 0:
-                    # if self.verbose:
-                    #     print('Ожидание %.0fс ' % interval)
-                    time.sleep(interval)
+        # # interval
+        # if interval > 0:
+        #     # if self.verbose:
+        #     #     print('Ожидание %.0fс ' % interval)
+        time.sleep(1)

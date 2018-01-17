@@ -265,7 +265,7 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": int(1466943020524412 + int(time.time() * 1000))}
+                  "nonce": int(round(time.time()*1000))}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1
@@ -287,7 +287,7 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": int(1466943020524412 + int(time.time() * 1000))}
+                  "nonce": int(round(time.time()*1000))}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1

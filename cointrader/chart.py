@@ -8,7 +8,7 @@ import stockstats
 
 def chart2csv(chart):
     out = []
-    header = "date,amount,close,high,low,open,volume"
+    header = "date,_amount_deleted,close,high,low,open,volume"
     out.append(header)
     for cs in chart:
         out.append("{},{},{},{},{},{},{}".format(cs["date"],

@@ -38,7 +38,7 @@ class Market(object):
 
     """Docstring for Market. """
 
-    def __init__(self, exchange, name, dry_run=False):
+    def __init__(self, exchange, name, backTrade=False, dry_run=False):
         """TODO: to be defined1.
 
         :name: TODO
@@ -47,6 +47,9 @@ class Market(object):
         self._exchange = exchange
         self._name = name
         self._dry_run = dry_run
+        self._chart_data = None
+        self._backtest_tick = 1
+        self._backtrade = backTrade
 
     @property
     def currency(self):
@@ -88,22 +91,44 @@ class Market(object):
         if start is None:
             start = datetime.datetime.utcnow()
 
-        data = self._get_chart_data(resolution, start, end)
-        return Chart(data, start, end)
+        if self._chart_data is None and self._backtrade:
+            self._chart_data = self._get_chart_data(resolution, start, end)
+            self._backtest_tick += MIN_POINTS
+            return Chart(self._chart_data[0:self._backtest_tick], start, end)
+        elif self._backtrade:
+            return Chart(self._chart_data[0:self._backtest_tick], start, end)
+        else:
+            data = self._get_chart_data(resolution, start, end)
+            return Chart(data, start, end)
+
 
     def buy(self, btc, price=None, option=None):
-        """Will buy coins on the market for the given amount of BTC. On
+        """Will buy coins on the market for the given _amount_deleted of BTC. On
         default we will make a market order which means we will try to
         buy for the best price available. If price is given the order
         will be placed for at the given price. You can optionally
         provide some options. See
         :class:`cointrader.exchanges.poloniex.api` for more details.
 
-        :btc: Amount of BTC
+        :_btc_deleted: Amount of BTC
         :price: Optionally price for which you want to buy
         :option: Optionally some buy options
         :returns: Dict witch details on the order.
         """
+        if self._backtrade:
+            price = float(self._chart_data[0:self._backtest_tick][-1]['close'])
+            date = datetime.datetime.utcfromtimestamp(self._chart_data[0:self._backtest_tick][-1]['date'])
+            btc = add_fee(btc)
+            amount = btc / price
+            return {u'orderNumber': u'{}'.format(int(time.time() * 1000)),
+                    u'resultingTrades': [
+                        {u'tradeID': u'{}'.format(int(time.time() * 1000)),
+                         u'rate': u'{}'.format(price),
+                         u'_amount_deleted': u'{}'.format(amount),
+                         u'date': u'{}'.format(date),
+                         u'total': u'{}'.format(btc),
+                         u'type': u'buy'}]}
+
         if price is None:
             # Get best price on market.
             orderbook = self._exchange._api.book(self._name)
@@ -118,7 +143,7 @@ class Market(object):
                     u'resultingTrades': [
                         {u'tradeID': u'{}'.format(int(time.time() * 1000)),
                          u'rate': u'{}'.format(price),
-                         u'amount': u'{}'.format(amount),
+                         u'_amount_deleted': u'{}'.format(amount),
                          u'date': u'{}'.format(date),
                          u'total': u'{}'.format(btc),
                          u'type': u'buy'}]}
@@ -126,6 +151,19 @@ class Market(object):
             return self._exchange._api.buy(self._name, amount, price, option)
 
     def sell(self, amount, price=None, option=None):
+        if self._backtrade:
+            price = float(self._chart_data[0:self._backtest_tick][-1]['close'])
+            date = datetime.datetime.utcfromtimestamp(self._chart_data[0:self._backtest_tick][-1]['date'])
+            btc = add_fee(amount * price)
+            return {u'orderNumber': u'{}'.format(int(time.time() * 1000)),
+                    u'resultingTrades': [
+                        {u'tradeID': u'{}'.format(int(time.time() * 1000)),
+                         u'rate': u'{}'.format(price),
+                         u'_amount_deleted': u'{}'.format(amount),
+                         u'date': u'{}'.format(date),
+                         u'total': u'{}'.format(btc),
+                         u'type': u'sell'}]}
+
         if price is None:
             # Get best price on market.
             orderbook = self._exchange._api.book(self._name)
@@ -140,28 +178,12 @@ class Market(object):
                     u'resultingTrades': [
                         {u'tradeID': u'{}'.format(int(time.time() * 1000)),
                          u'rate': u'{}'.format(price),
-                         u'amount': u'{}'.format(amount),
+                         u'_amount_deleted': u'{}'.format(amount),
                          u'date': u'{}'.format(date),
                          u'total': u'{}'.format(btc),
                          u'type': u'sell'}]}
         else:
             return self._exchange._api.sell(self._name, amount, price, option)
-
-
-class BacktestMarket(Market):
-
-    """Market to enable backtesting a strategy on the market."""
-
-    def __init__(self, exchange, name):
-        """TODO: to be defined1.
-
-        :exchange: TODO
-        :name: TODO
-
-        """
-        Market.__init__(self, exchange, name)
-        self._chart_data = None
-        self._backtest_tick = 1
 
     def continue_backtest(self):
         self._backtest_tick += 1
@@ -169,38 +191,60 @@ class BacktestMarket(Market):
             return True
         return False
 
-    def get_chart(self, resolution="30m", start=None, end=None):
-        if self._chart_data is None:
-            self._chart_data = self._get_chart_data(resolution, start, end)
-            self._backtest_tick += MIN_POINTS
-        return Chart(self._chart_data[0:self._backtest_tick], start, end)
 
-    def buy(self, btc, price=None):
-        price = float(self._chart_data[0:self._backtest_tick][-1]['close'])
-        date = datetime.datetime.utcfromtimestamp(self._chart_data[0:self._backtest_tick][-1]['date'])
-        btc = add_fee(btc)
-        amount = btc / price
-        return {u'orderNumber': u'{}'.format(int(time.time() * 1000)),
-                u'resultingTrades': [
-                    {u'tradeID': u'{}'.format(int(time.time() * 1000)),
-                     u'rate': u'{}'.format(price),
-                     u'amount': u'{}'.format(amount),
-                     u'date': u'{}'.format(date),
-                     u'total': u'{}'.format(btc),
-                     u'type': u'buy'}]}
-
-    def sell(self, amount, price=None):
-        price = float(self._chart_data[0:self._backtest_tick][-1]['close'])
-        date = datetime.datetime.utcfromtimestamp(self._chart_data[0:self._backtest_tick][-1]['date'])
-        btc = add_fee(amount * price)
-        return {u'orderNumber': u'{}'.format(int(time.time() * 1000)),
-                u'resultingTrades': [
-                    {u'tradeID': u'{}'.format(int(time.time() * 1000)),
-                     u'rate': u'{}'.format(price),
-                     u'amount': u'{}'.format(amount),
-                     u'date': u'{}'.format(date),
-                     u'total': u'{}'.format(btc),
-                     u'type': u'sell'}]}
+# class BacktestMarket(Market):
+#
+#     """Market to enable backtesting a strategy on the market."""
+#
+#     def __init__(self, exchange, name):
+#         """TODO: to be defined1.
+#
+#         :exchange: TODO
+#         :name: TODO
+#
+#         """
+#         Market.__init__(self, exchange, name)
+#         self._chart_data = None
+#         self._backtest_tick = 1
+#
+#     def continue_backtest(self):
+#         self._backtest_tick += 1
+#         if self._chart_data and len(self._chart_data) >= self._backtest_tick:
+#             return True
+#         return False
+#
+#     def get_chart(self, resolution="30m", start=None, end=None):
+#         if self._chart_data is None:
+#             self._chart_data = self._get_chart_data(resolution, start, end)
+#             self._backtest_tick += MIN_POINTS
+#         return Chart(self._chart_data[0:self._backtest_tick], start, end)
+#
+#     def buy(self, btc, price=None):
+#         price = float(self._chart_data[0:self._backtest_tick][-1]['close'])
+#         date = datetime.datetime.utcfromtimestamp(self._chart_data[0:self._backtest_tick][-1]['date'])
+#         btc = add_fee(btc)
+#         amount = btc / price
+#         return {u'orderNumber': u'{}'.format(int(time.time() * 1000)),
+#                 u'resultingTrades': [
+#                     {u'tradeID': u'{}'.format(int(time.time() * 1000)),
+#                      u'rate': u'{}'.format(price),
+#                      u'_amount_deleted': u'{}'.format(amount),
+#                      u'date': u'{}'.format(date),
+#                      u'total': u'{}'.format(btc),
+#                      u'type': u'buy'}]}
+#
+#     def sell(self, amount, price=None):
+#         price = float(self._chart_data[0:self._backtest_tick][-1]['close'])
+#         date = datetime.datetime.utcfromtimestamp(self._chart_data[0:self._backtest_tick][-1]['date'])
+#         btc = add_fee(amount * price)
+#         return {u'orderNumber': u'{}'.format(int(time.time() * 1000)),
+#                 u'resultingTrades': [
+#                     {u'tradeID': u'{}'.format(int(time.time() * 1000)),
+#                      u'rate': u'{}'.format(price),
+#                      u'_amount_deleted': u'{}'.format(amount),
+#                      u'date': u'{}'.format(date),
+#                      u'total': u'{}'.format(btc),
+#                      u'type': u'sell'}]}
 
 
 class Exchange(object):

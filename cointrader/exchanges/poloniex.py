@@ -56,15 +56,15 @@ class Api(object):
 
     def buy(self, market, amount, price, option=None):
         """Places a limit buy order in a given market. Required POST
-        parameters are "currencyPair", "rate", and "amount". If
+        parameters are "currencyPair", "rate", and "_amount_deleted". If
         successful, the method will return the order number. Sample
         output::
 
-            {"orderNumber":31226040,"resultingTrades":[{"amount":"338.8732","date":"2014-10-18
+            {"orderNumber":31226040,"resultingTrades":[{"_amount_deleted":"338.8732","date":"2014-10-18
             23:03:21","rate":"0.00000173","total":"0.00058625","tradeID":"16164","type":"buy"}]}
 
-        'total' is the amount of btc after applying the fee of the order.
-        This is the amount of BTC you actually used in the the order.
+        'total' is the _amount_deleted of _btc_deleted after applying the fee of the order.
+        This is the _amount_deleted of BTC you actually used in the the order.
 
         You may optionally set "fillOrKill", "immediateOrCancel",
         "postOnly" to 1. A fill-or-kill order will either fill in its
@@ -77,7 +77,7 @@ class Api(object):
         part of the order that fills.
 
         :market: Currency pair like BTC_DASH.
-        :amount: How many coins do you want to buy
+        :_amount_deleted: How many coins do you want to buy
         :price: For which price do you want to buy?
         :option: See docsstring for more details
         :returns: Dict with details on order.
@@ -86,15 +86,15 @@ class Api(object):
 
     def sell(self, market, amount, price=None):
         """Places a limit sell order in a given market. Required POST
-        parameters are "currencyPair", "rate", and "amount". If
+        parameters are "currencyPair", "rate", and "_amount_deleted". If
         successful, the method will return the order number. Sample
         output::
 
-            {"orderNumber":31226040,"resultingTrades":[{"amount":"338.8732","date":"2014-10-18
+            {"orderNumber":31226040,"resultingTrades":[{"_amount_deleted":"338.8732","date":"2014-10-18
             23:03:21","rate":"0.00000173","total":"0.00058625","tradeID":"16164","type":"sell"}]}
 
-        'total' is the amount of btc after applying the fee of the order.
-        This is the amount of BTC you actually used in the the order.
+        'total' is the _amount_deleted of _btc_deleted after applying the fee of the order.
+        This is the _amount_deleted of BTC you actually used in the the order.
 
         You may optionally set "fillOrKill", "immediateOrCancel",
         "postOnly" to 1. A fill-or-kill order will either fill in its
@@ -107,7 +107,7 @@ class Api(object):
         part of the order that fills.
 
         :market: Currency pair like BTC_DASH.
-        :amount: How many coins do you want to buy
+        :_amount_deleted: How many coins do you want to buy
         :price: For which price do you want to buy?
         :option: See docsstring for more details
         :returns: Dict with details on order.
@@ -269,7 +269,7 @@ class Poloniex(Api):
         params = {"command": "buy",
                   "currencyPair": market,
                   "rate": price,
-                  "amount": amount,
+                  "_amount_deleted": amount,
                   "nonce": int(round(self.nonce + time.time() * 1000))}
 
         if option == "fillOrKill":
@@ -291,7 +291,7 @@ class Poloniex(Api):
         params = {"command": "sell",
                   "currencyPair": market,
                   "rate": price,
-                  "amount": amount,
+                  "_amount_deleted": amount,
                   "nonce": int(round(self.nonce + time.time()*1000))}
 
         if option == "fillOrKill":

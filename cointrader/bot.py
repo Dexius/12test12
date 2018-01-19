@@ -698,15 +698,15 @@ class Cointrader(Base):
                     result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
                                                  first_sell=first_sell)
                     # self.active_trade_signal[0] = signal.value
-                        if self.verbose and signal.value == BUY and result == 'Buy':
-                            print("Произведена закупка")
-                        elif self.verbose and signal.value == SELL and result == 'Sell':
-                            print("Произведена продажа")
-                        elif self.verbose and result == 'Enough':
-                            if signal.value == SELL:
-                                print("Не достаточно средств. ПРОДАЖА аннулирована.")
-                            if signal.value == BUY:
-                                print("Не достаточно средств. ПОКУПКА аннулирована.")
+                    if self.verbose and signal.value == BUY and result == 'Buy':
+                        print("Произведена закупка")
+                    elif self.verbose and signal.value == SELL and result == 'Sell':
+                        print("Произведена продажа")
+                    elif self.verbose and result == 'Enough':
+                        if signal.value == SELL:
+                            print("Не достаточно средств. ПРОДАЖА аннулирована.")
+                        if signal.value == BUY:
+                            print("Не достаточно средств. ПОКУПКА аннулирована.")
 
                     # # Записываем текущий активный сигнал в *active_trade_signal*
                     # self.active_trade_signal.append(signal.value)

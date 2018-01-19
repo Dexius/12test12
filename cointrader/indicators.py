@@ -20,15 +20,18 @@ MIN_POINTS = 120
 # Minimal OFFSET of datapoints needed in a chart to be able to
 # calculate indicatorss like EMA or SMA.
 
+
+SELL_ZONE = 0
 # Signals for strategies.
 
 
 class Signal(object):
 
-    def __init__(self, signal, date, details=None):
+    def __init__(self, signal, date, details=None, over_sell=False):
         self.value = signal
         self.date = date
         self.details = details
+        self.over_sell = over_sell
 
     @property
     def buy(self):
@@ -134,8 +137,8 @@ def double_cross(chart, fast=13, slow=26):
     else:
         trend = "ПОВОРОТ"
     print(date, trend,
-          "EMA:{} {}:{} EMA{}: {}, EMA{}: {})".format(signal, EMA_name, ema_diff, fast, ema_1, slow, ema_2),
-          end=" ",
+          "EMA:{} {}:{} EMA{}: {}, EMA{}: {}".format(signal, EMA_name, ema_diff, fast, ema_1, slow, ema_2),
+          end="\n",
           flush=True)
     return Signal(signal, date, "EMA{}: {}, EMA{}: {})".format(fast, ema_1, slow, ema_2))
 

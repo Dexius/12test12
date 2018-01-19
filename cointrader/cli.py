@@ -212,7 +212,7 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
 
     start_before = start
     end_before = end
-    amount_before = bot._amount_deleted
+    amount_before = bot.fond.amount_btc
     end, start = set_start_end(end, 1, start)
 
     db.delete(bot)

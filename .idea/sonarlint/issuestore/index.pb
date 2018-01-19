@@ -17,3 +17,31 @@ D
 :
 
 .gitignore,a\5\a5cc2925ca8258af241be7e5b0381edf30266302
+P
+ cointrader\exchanges\__init__.py,a\2\a2a9c7490260a911e78c472292d07017fda1651d
+Q
+!cointrader\strategies\__init__.py,7\b\7b2dc608dacaf02448259d021ca0b6354f92c4b2
+F
+cointrader\__init__.py,8\0\80bb05514c7366d48de076c24cfece2b23b1cd0e
+D
+cointrader\config.py,0\c\0c51cb09a64e9d23f3dbbd88eaea9d28ddc97a84
+E
+cointrader\helpers.py,5\1\5185567f617768bc77dcac759c6651d759d687e6
+C
+cointrader\chart.py,0\e\0ebf2bd87817a3af533c26d73433510744ab1c50
+F
+cointrader\strategy.py,f\2\f2f64a43715f7751c9463e7d7a541a950fba6e3d
+P
+ cointrader\exchanges\poloniex.py,c\3\c383c44f59c209ce6da805a517924b2733458563
+A
+cointrader\cli.py,4\3\43d992b779dc9f351f4964babce813564a99a873
+H
+cointrader\indicators.py,3\6\36b8fdcabceca3238c7a8c86e95b8e0ea01a6516
+H
+cointrader\asset_fond.py,8\a\8af33a0f1cccbd7bd3a79fe6340db14deef2853a
+F
+cointrader\cli-beta.py,f\6\f6987bdb3a3fca0a9f1a26a4f135940724d932fc
+F
+cointrader\exchange.py,c\5\c51c8d9991da85f869850ec0f47c2d4746413037
+A
+cointrader\bot.py,5\c\5c41c925b73eadc9af58666d7da45548eac4a846

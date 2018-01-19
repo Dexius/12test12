@@ -106,3 +106,7 @@ class Chart(object):
     def ema(self, window=10):
         ema = self._stock.get("close_{}_ema".format(window))
         return ema.tolist()
+
+    def rsi(self):
+        self._stock.get('rsi_9')
+        return self._stock['rsi_9'].tolist()

@@ -269,7 +269,7 @@ class Poloniex(Api):
         params = {"command": "buy",
                   "currencyPair": market,
                   "rate": price,
-                  "_amount_deleted": amount,
+                  "amount": amount,
                   "nonce": int(round(self.nonce + time.time() * 1000))}
 
         if option == "fillOrKill":
@@ -291,7 +291,7 @@ class Poloniex(Api):
         params = {"command": "sell",
                   "currencyPair": market,
                   "rate": price,
-                  "_amount_deleted": amount,
+                  "amount": amount,
                   "nonce": int(round(self.nonce + time.time()*1000))}
 
         if option == "fillOrKill":

@@ -2,7 +2,7 @@
 import datetime
 import logging
 from cointrader.indicators import (
-    WAIT, BUY, SELL, Signal, macdh_momententum, macdh, double_cross
+    SELL_ZONE, WAIT, BUY, SELL, Signal, macdh_momententum, macdh, double_cross
 )
 
 log = logging.getLogger(__name__)
@@ -57,13 +57,16 @@ class Klondike(Strategy):
 class Followtrend(Strategy):
     """Simple trend follow strategie."""
 
+
     def __init__(self):
+
         Strategy.__init__(self)
         self._macd = WAIT
         self.verbose = False
 
     def signal(self, chart, verbose = False):
 
+        global SELL_ZONE
         self.verbose = verbose
         # Get current chart
         closing = chart.values()
@@ -81,7 +84,7 @@ class Followtrend(Strategy):
         if macdh_signal.value == SELL:
             self._macd = SELL
         log.debug("macdh signal: {}".format(self._macd))
-        print("MACD histogram signal: {}".format(self._macd),end=" ", flush=True)
+        # print("MACD histogram signal: {}".format(self._macd),end=" ", flush=True)
 
         # Finally we are using the double_cross signal as confirmation
         # of the former MACDH signal
@@ -91,9 +94,19 @@ class Followtrend(Strategy):
         else:
             signal = Signal(WAIT, dc_signal.date)
 
-        if self.verbose:
-            print("Итоговый сигнал @{}: {}".format(signal.date, signal.value), end="\n", flush=True)
+        # if self.verbose:
+        #     print("Итоговый сигнал @{}: {}".format(signal.date, signal.value), end="\n", flush=True)
 
         log.debug("Итоговый сигнал @{}: {}".format(signal.date, signal.value))
         self.signals["DC"] = signal
+        list = chart.rsi()
+        if list[-1] > 70:
+            if signal.value == BUY:
+                signal.over_sell = True
+                SELL_ZONE += 1
+                print("SELL_ZONE: {} Курс: {}".format(SELL_ZONE, self._value))
+
+        if signal.value == SELL:
+            SELL_ZONE = 0
+
         return signal

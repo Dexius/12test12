@@ -59,7 +59,7 @@ def main(ctx):
 @click.option("--percent", help="Процент торговли от всей суммы.", is_flag=False)
 @pass_context
 def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_time=False):
-    """Start a new bot on the given market and the given _amount_deleted of BTC"""
+    """Start a new bot on the given market and the given amount of BTC"""
 
     # Build the market on which the bot will operate
     # First check if the given market is a valid market. If not exit
@@ -92,6 +92,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
 
     best_testing_market = []
     test_markets.append(set_market(ctx, market._name, backtrade=True))
+    index = 0
     for current_market in test_markets:
         bot = create_bot(current_market, strategy, resolution, start, end, verbose, percent, automatic=True)
         for trade in bot.trades:
@@ -100,7 +101,8 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
                     db.delete(trade)
             except:
                 pass
-        bot.start(backtest=True, automatic=True)
+        if index == len(test_markets) - 1:
+            bot.start(backtest=True, automatic=True)
         try:
             db.delete(bot)
             db.commit()
@@ -108,6 +110,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
         except:
             pass
         best_testing_market.append({"market": current_market._name, "profit": bot.profit})
+        index += 1
 
     best_pair = None
     out = [["ПАРА", "ЗАРАБОТОК"]]

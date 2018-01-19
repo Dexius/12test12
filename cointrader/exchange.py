@@ -124,7 +124,7 @@ class Market(object):
                     u'resultingTrades': [
                         {u'tradeID': u'{}'.format(int(time.time() * 1000)),
                          u'rate': u'{}'.format(price),
-                         u'_amount_deleted': u'{}'.format(amount),
+                         u'amount': u'{}'.format(amount),
                          u'date': u'{}'.format(date),
                          u'total': u'{}'.format(btc),
                          u'type': u'buy'}]}
@@ -143,7 +143,7 @@ class Market(object):
                     u'resultingTrades': [
                         {u'tradeID': u'{}'.format(int(time.time() * 1000)),
                          u'rate': u'{}'.format(price),
-                         u'_amount_deleted': u'{}'.format(amount),
+                         u'amount': u'{}'.format(amount),
                          u'date': u'{}'.format(date),
                          u'total': u'{}'.format(btc),
                          u'type': u'buy'}]}
@@ -159,7 +159,7 @@ class Market(object):
                     u'resultingTrades': [
                         {u'tradeID': u'{}'.format(int(time.time() * 1000)),
                          u'rate': u'{}'.format(price),
-                         u'_amount_deleted': u'{}'.format(amount),
+                         u'amount': u'{}'.format(amount),
                          u'date': u'{}'.format(date),
                          u'total': u'{}'.format(btc),
                          u'type': u'sell'}]}
@@ -178,7 +178,7 @@ class Market(object):
                     u'resultingTrades': [
                         {u'tradeID': u'{}'.format(int(time.time() * 1000)),
                          u'rate': u'{}'.format(price),
-                         u'_amount_deleted': u'{}'.format(amount),
+                         u'amount': u'{}'.format(amount),
                          u'date': u'{}'.format(date),
                          u'total': u'{}'.format(btc),
                          u'type': u'sell'}]}

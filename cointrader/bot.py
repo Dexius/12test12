@@ -126,8 +126,10 @@ def get_balance_amount_btc(market):
     # Setup the bot with coins and BTC.
     balances = market._exchange.get_balance()
     btc = balances["BTC"]["quantity"]
-    amount = balances[market.currency]["quantity"]
-
+    try:
+        amount = balances[market.currency]["quantity"]
+    except:
+        amount = 0.0
     return amount, btc
 
 
@@ -503,15 +505,14 @@ class Cointrader(Base):
 
                 self.fond.print_used_btc()
 
-                if signal.value == BUY and self._in_time(signal.date) and self.fond.begin_tradind_test_amount_btc() \
-                    and not self.fond.rows:
+                if signal.value == BUY and self._in_time(signal.date) and self.fond.btc > 0 and not self.fond.rows:
                     self._buy()
                     result = 'Buy'
                     # Выводим статистику
                     click.echo(render_bot_statistic(self, self.stat()))
 
                 elif signal.value == SELL and self._in_time(
-                    signal.date) and self.fond.begin_tradind_test_btc() and not first_sell:
+                    signal.date) and self.fond.amount_btc > 0 and not first_sell:
                     self._sell()
                     result = 'Sell'
                     # Выводим статистику
@@ -520,9 +521,9 @@ class Cointrader(Base):
                     closing = chart.values()
                     _value = closing[-1][1]
                     percent = 0.03
-                    while self.fond.amount_btc * percent < 0.0000126:
+                    while self.fond.amount_btc * _value * percent < 0.0000126:
                         percent += 0.01
-                    total_btc = self.fond.amount_btc * percent
+                    total_btc = self.fond.amount_btc * _value * percent
                     total_amount = total_btc / _value
                     self._sell(total_amount, first_sell)
                     result = 'Sell'

@@ -821,6 +821,8 @@ class Cointrader(Base):
 
             time.sleep(interval)
 
+        return self.detouch
+
     def first_sell(self, price):
         first_sell_in_it = False
         for item in self.fond.rows:

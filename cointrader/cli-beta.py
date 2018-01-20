@@ -81,15 +81,38 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
 
     start, end = set_start_end()
 
-    bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
+    best_pair, best_testing_market = find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy,
+                                                    verbose)
 
+    if best_pair != None:
+        print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"], best_pair["profit"]))
+
+    trade_to_minus = False
+    if best_testing_market[-1]["profit"] > 0:
+        bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
+        trade_to_minus = bot.start(backtest=False, automatic=automatic)
+    else:
+        print("На данной паре заработок отсутсвует.")
+
+    if trade_to_minus:
+
+        while trade_to_minus:
+            best_pair, best_testing_market = find_best_pair(automatic, ctx, end, market, percent, resolution, start,
+                                                            strategy,
+                                                            verbose)
+            if best_pair != None and best_pair["profit"] > 0:
+                print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"], best_pair["profit"]))
+                bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
+                trade_to_minus = bot.start(backtest=False, automatic=automatic)
+
+
+def find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy, verbose):
+    bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
     df = pd.DataFrame.from_dict(bot._market._exchange.markets, orient='index')
     if len(df):
         test_markets = print_top_trends(ctx, df, market, backtrade=False)
-
     db.delete(bot)
     db.commit()
-
     best_testing_market = []
     test_markets.append(set_market(ctx, market._name, backtrade=True))
     index = 0
@@ -101,8 +124,8 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
                     db.delete(trade)
             except:
                 pass
-        if index == len(test_markets) - 1:
-            bot.start(backtest=True, automatic=True)
+        # if index == len(test_markets) - 1:
+        bot.start(backtest=True, automatic=True)
         try:
             db.delete(bot)
             db.commit()
@@ -111,7 +134,11 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
             pass
         best_testing_market.append({"market": current_market._name, "profit": bot.profit})
         index += 1
+    best_pair = best_markets_print(best_testing_market)
+    return best_pair, best_testing_market
 
+
+def best_markets_print(best_testing_market):
     best_pair = None
     out = [["ПАРА", "ЗАРАБОТОК"]]
     for item in best_testing_market:
@@ -124,19 +151,9 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
             values.append(item["market"])
             values.append(item["profit"])
             out.append(values)
-
     table = AsciiTable(out).table
     print("\n".join(["\nПрибыльные пары:", table]))
-
-    if best_pair != None:
-        print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"], best_pair["profit"]))
-
-    bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
-
-    if best_testing_market[-1]["profit"] > 0:
-        bot.start(backtest=False, automatic=automatic)
-    else:
-        print("На данной паре заработок отсутсвует.")
+    return best_pair
 
 
 def print_top_trends(ctx, df, market, backtrade):

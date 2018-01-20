@@ -93,6 +93,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
         trade_to_minus = bot.start(backtest=False, automatic=automatic)
     else:
         print("На данной паре заработок отсутсвует.")
+        trade_to_minus = True
 
     if trade_to_minus:
 

@@ -138,7 +138,7 @@ def double_cross(chart, fast=13, slow=26):
         trend = "ПОВОРОТ"
     print(date, trend,
           "EMA:{} {}:{} EMA{}: {}, EMA{}: {}".format(signal, EMA_name, ema_diff, fast, ema_1, slow, ema_2),
-          end="\n",
+          end=" ",
           flush=True)
     return Signal(signal, date, "EMA{}: {}, EMA{}: {} \"{}\")".format(fast, ema_1, slow, ema_2, trend))
 

@@ -119,7 +119,9 @@ class Followtrend(Strategy):
         if list[-1] > 70:
             signal.over_sell = True
             SELL_ZONE += 1
-            print("SELL_ZONE: {} Курс: {}".format(SELL_ZONE, self._value))
+            print(" SELL_ZONE: {} Курс: {}".format(SELL_ZONE, self._value))
+        else:
+            print(" ")
         #
         if signal.value == SELL:
             SELL_ZONE = 0

@@ -697,23 +697,23 @@ class Cointrader(Base):
                 #     if not self.active_trade_signal:
                 #         self.active_trade_signal.append(signal.value)
 
-                if signal.value != WAIT or first_sell:
+                    if signal.value != WAIT or first_sell:
 
-                    result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
-                                                 first_sell=first_sell)
-                    # self.active_trade_signal[0] = signal.value
-                    if self.verbose and signal.value == BUY and result == 'Buy':
-                        print("Произведена закупка")
-                    elif self.verbose and signal.value == SELL and result == 'Sell':
-                        print("Произведена продажа")
-                    elif self.verbose and result == 'Enough':
-                        if signal.value == SELL:
-                            print("Не достаточно средств. ПРОДАЖА аннулирована.")
-                        if signal.value == BUY:
-                            print("Не достаточно средств. ПОКУПКА аннулирована.")
+                        result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
+                                                     first_sell=first_sell)
+                        # self.active_trade_signal[0] = signal.value
+                        if self.verbose and signal.value == BUY and result == 'Buy':
+                            print("Произведена закупка")
+                        elif self.verbose and signal.value == SELL and result == 'Sell':
+                            print("Произведена продажа")
+                        elif self.verbose and result == 'Enough':
+                            if signal.value == SELL:
+                                print("Не достаточно средств. ПРОДАЖА аннулирована.")
+                            if signal.value == BUY:
+                                print("Не достаточно средств. ПОКУПКА аннулирована.")
 
-                    # # Записываем текущий активный сигнал в *active_trade_signal*
-                    # self.active_trade_signal.append(signal.value)
+                        # # Записываем текущий активный сигнал в *active_trade_signal*
+                        # self.active_trade_signal.append(signal.value)
 
                 except Exception as ex:
                     # Выводим ошибку выполнения

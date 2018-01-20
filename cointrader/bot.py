@@ -693,7 +693,7 @@ class Cointrader(Base):
                 """ TODO: """
 
             if signal:
-                # try:
+                try:
                 #     if not self.active_trade_signal:
                 #         self.active_trade_signal.append(signal.value)
 
@@ -715,11 +715,11 @@ class Cointrader(Base):
                     # # Записываем текущий активный сигнал в *active_trade_signal*
                     # self.active_trade_signal.append(signal.value)
 
-            # except Exception as ex:
-            #     # Выводим ошибку выполнения
-            #     if self.verbose:
-            #         print("Не могу разметить ордер: {}".format(ex))
-            #     log.error("Не могу разметить ордер: {}".format(ex))
+                except Exception as ex:
+                    # Выводим ошибку выполнения
+                    if self.verbose:
+                        print("Не могу разметить ордер: {}".format(ex))
+                    log.error("Не могу разметить ордер: {}".format(ex))
             #
             #     # Пробую вычислить лимит сделки в BTC
             #     try:

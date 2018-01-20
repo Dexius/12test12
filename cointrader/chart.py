@@ -110,3 +110,7 @@ class Chart(object):
     def rsi(self):
         self._stock.get('rsi_9')
         return self._stock['rsi_9'].tolist()
+
+    def wr(self):
+        self._stock.get('wr_9')
+        return self._stock['wr_9'].tolist()

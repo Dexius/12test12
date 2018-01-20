@@ -26,6 +26,7 @@ class asset_fond:
         self.percent = percent
         self.minimal_step_cost = .00001 * 1.0025
         self.error = ""
+        self.sell_percent = 0.0
         self.rows = []
         self.begin_tradind_test_btc()
         self.print_used_btc()
@@ -37,6 +38,7 @@ class asset_fond:
             self.order_type = "TOTAL"
             self.btc = 0.0
             self.amount_btc = 0.0
+            self.sell_percent = 0.0
         else:
             self.rows.append(self._row_dict(btc, amount_btc, order_type, first_sell))
         self.calculate()
@@ -48,21 +50,26 @@ class asset_fond:
         return {"btc": btc, "amount_btc": amount_btc, "order_type": order_type, "first_sell": first_sell}
 
     def calculate(self):
+        global buy_btc, sell_percent
         total_btc = 0
         total_amount_btc = 0
+        sell_percent = 0.0
         for row in self.rows:
             if row["order_type"] == "SELL":
                 total_btc += row["btc"]
                 total_amount_btc -= row["amount_btc"]
+                sell_percent = float("{0:.2f}".format(total_btc / (buy_btc * 0.01)))
             elif row["order_type"] == "BUY":
                 total_btc -= row["btc"]
                 total_amount_btc += row["amount_btc"]
             elif row["order_type"] == "INIT":
                 total_btc = row["btc"]
                 total_amount_btc = row["amount_btc"]
+                buy_btc = total_btc
 
         self.btc = total_btc
         self.amount_btc = total_amount_btc
+        self.sell_percent = sell_percent
 
     def _tofloat(self, percent):
         return float(percent)

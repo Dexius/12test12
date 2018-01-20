@@ -361,3 +361,14 @@ class Poloniex(Exchange):
             return self._api.balance()
         else:
             return self._api.balance()[currency]
+
+    def get_spread(self, currency):
+        """
+        Get spread percent
+        :param currency:
+        :return spread percent:
+        """
+        list = self._api.book(currency=currency)
+        last_bid = float(list['bids'][0][0])
+        last_ask = float(list['asks'][0][0])
+        return (last_ask - last_bid) / last_ask * 0.01

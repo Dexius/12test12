@@ -64,7 +64,7 @@ class Followtrend(Strategy):
         self._macd = WAIT
         self.verbose = False
 
-    def signal(self, chart, verbose = False):
+    def signal(self, chart, verbose=False, first_buy_price=777777777777777777777777777):
 
         global SELL_ZONE
         self.verbose = verbose
@@ -84,13 +84,30 @@ class Followtrend(Strategy):
         if macdh_signal.value == SELL:
             self._macd = SELL
         log.debug("macdh signal: {}".format(self._macd))
-        # print("MACD histogram signal: {}".format(self._macd),end=" ", flush=True)
+        print("MACD histogram signal: {}".format(self._macd), end=" ", flush=True)
 
         # Finally we are using the double_cross signal as confirmation
         # of the former MACDH signal
         dc_signal = double_cross(chart)
-        if self._macd == (BUY and dc_signal.value == BUY) or (self._macd == SELL and dc_signal.value == SELL):
+
+        list = chart.rsi()
+        list_wr = chart.wr()
+        good_to_sell = (list_wr[-1] > 70 and first_buy_price < self._value)
+        good_to_buy = list[-1] < 53
+
+        # if self._macd == BUY and dc_signal.value == BUY:
+        #     print("----->{}".format(list[-1]))
+
+        if (self._macd == BUY and dc_signal.value == BUY and good_to_buy) or (
+            self._macd == SELL and dc_signal.value == SELL):
             signal = dc_signal
+            # print("Уровень 1: {}".format(list[-1]))
+            # print("Уровень 2: {}".format(list_wr[-1]))
+            # if list_wr[-1] > 70:
+            #     print("Уровень 2: {}".format(list_wr[-1]))
+        elif good_to_sell:
+            signal = Signal(SELL, dc_signal.date)
+
         else:
             signal = Signal(WAIT, dc_signal.date)
 
@@ -99,13 +116,11 @@ class Followtrend(Strategy):
 
         log.debug("Итоговый сигнал @{}: {}".format(signal.date, signal.value))
         self.signals["DC"] = signal
-        list = chart.rsi()
         if list[-1] > 70:
-            if signal.value == BUY:
-                signal.over_sell = True
-                SELL_ZONE += 1
-                print("SELL_ZONE: {} Курс: {}".format(SELL_ZONE, self._value))
-
+            signal.over_sell = True
+            SELL_ZONE += 1
+            print("SELL_ZONE: {} Курс: {}".format(SELL_ZONE, self._value))
+        #
         if signal.value == SELL:
             SELL_ZONE = 0
 

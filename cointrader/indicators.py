@@ -140,7 +140,7 @@ def double_cross(chart, fast=13, slow=26):
           "EMA:{} {}:{} EMA{}: {}, EMA{}: {}".format(signal, EMA_name, ema_diff, fast, ema_1, slow, ema_2),
           end="\n",
           flush=True)
-    return Signal(signal, date, "EMA{}: {}, EMA{}: {})".format(fast, ema_1, slow, ema_2))
+    return Signal(signal, date, "EMA{}: {}, EMA{}: {} \"{}\")".format(fast, ema_1, slow, ema_2, trend))
 
 
 def macdh(chart):
@@ -189,7 +189,7 @@ def macdh_momententum(chart):
     elif neg_macdh_local_min:  # or pos_macdh_local_min:
         signal = BUY
 
-    return Signal(signal, date, "MAX: {}, MIN {})".format(pos_macdh_local_max, neg_macdh_local_min))
+    return Signal(signal, date, "MAX: {}, MIN {}".format(pos_macdh_local_max, neg_macdh_local_min))
 
 
 def is_max_value(values):

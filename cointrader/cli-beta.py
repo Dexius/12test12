@@ -88,7 +88,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
         print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"], best_pair["profit"]))
 
     trade_to_minus = False
-    if best_testing_market[-1]["profit"] > 0:
+    if best_testing_market[-1]["profit"] > 3:
         bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
         trade_to_minus = bot.start(backtest=False, automatic=automatic)
     else:
@@ -108,6 +108,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, ther_t
 
 
 def find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy, verbose):
+    test_markets = []
     bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
     df = pd.DataFrame.from_dict(bot._market._exchange.markets, orient='index')
     if len(df):

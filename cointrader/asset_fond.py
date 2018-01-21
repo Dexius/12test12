@@ -31,6 +31,14 @@ class asset_fond:
         self.begin_tradind_test_btc()
         self.print_used_btc()
 
+    def get_allow_sell(self, amount_to_sell, rate):
+
+        diff_btc = (self.amount_btc - amount_to_sell) * rate
+        if diff_btc <= .00001 + (diff_btc * 0.0025):
+            return self.amount_btc
+        else:
+            amount_to_sell
+
     def add_row(self, btc, amount_btc, order_type, first_sell=False, renew=False):
         if not self.rows:
             self.rows.append(self._row_dict(btc, self.amount_btc, "INIT", first_sell))
@@ -110,14 +118,14 @@ class asset_fond:
             print(self.error)
             return False
 
-    def begin_tradind_test_amount_btc(self):
-        if self.amount_btc > self.minimal_step_cost:
+    def begin_trading_test_amount_btc(self):
+        # if self.amount_btc > self.minimal_step_cost:
             return True
-        else:
-            self.error = "Сумма продажи {} меньше минимально возможной для торговли {}.".format(self.btc,
-                                                                                                self.minimal_step_cost)
-            print(self.error)
-            return False
+        # else:
+        #     self.error = "Сумма продажи {} меньше минимально возможной для торговли {}.".format(self.btc,
+        #                                                                                         self.minimal_step_cost)
+        #     print(self.error)
+        #     return False
 
     def check_error(self):
         if self.error:

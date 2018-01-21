@@ -493,18 +493,15 @@ class Cointrader(Base):
                     # Выводим статистику
                     click.echo(render_bot_statistic(self, self.stat()))
                 elif first_sell:
-                    total_amount = self.fond.amount_btc * 0.05
-                    if self.fond.sell_percent > 85:
-                        renew = True
-                        total_amount = self.fond.amount_btc
-                    else:
-                        renew = False
+                    part = 0.1
+                    total_amount = self.fond.amount_btc * part
                     closing = chart.values()
                     _value = closing[-1][1]
-                    percent = 0.03
-                    while total_amount * _value * percent < 0.0000126:
-                        percent += 0.01
-                    total_amount = total_amount * _value * percent
+                    total_amount = self.fond.get_allow_sell(amount_to_sell=total_amount, rate=_value)
+                    if not total_amount == self.fond.amount_btc * part:
+                        renew = True
+                    else:
+                        renew = False
                     self._sell(total_amount, first_sell, renew=renew)
                     result = 'Sell'
                     # Выводим статистику
@@ -643,10 +640,10 @@ class Cointrader(Base):
                 click.echo(render_user_options(options))
                 c = input()
                 if c == 'b' and self._btc_deleted:
-                    if self.fond.begin_tradind_test_amount_btc():
+                    if self.fond.begin_trading_test_amount_btc():
                         signal = Signal(BUY, datetime.datetime.utcnow())
                 elif c == 's' and self.fond.amount_btc:
-                    if self.fond.begin_tradind_test_amount_btc():
+                    if self.fond.begin_trading_test_amount_btc():
                         # amount = self.fond.amount_btc
                         # else:
                         #     amount = self._min_count_currency_deleted
@@ -673,33 +670,33 @@ class Cointrader(Base):
                 """ TODO: """
 
             if signal:
-                # try:
+                try:
                 #     if not self.active_trade_signal:
                 #         self.active_trade_signal.append(signal.value)
 
-                if signal.value != WAIT or first_sell:
+                    if signal.value != WAIT or first_sell:
 
-                    result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
-                                                 first_sell=first_sell)
-                    # self.active_trade_signal[0] = signal.value
-                    if self.verbose and signal.value == BUY and result == 'Buy':
-                        print("Произведена закупка")
-                    elif self.verbose and signal.value == SELL and result == 'Sell':
-                        print("Произведена продажа")
-                    elif self.verbose and result == 'Enough':
-                        if signal.value == SELL:
-                            print("Не достаточно средств. ПРОДАЖА аннулирована.")
-                        if signal.value == BUY:
-                            print("Не достаточно средств. ПОКУПКА аннулирована.")
+                        result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
+                                                     first_sell=first_sell)
+                        # self.active_trade_signal[0] = signal.value
+                        if self.verbose and signal.value == BUY and result == 'Buy':
+                            print("Произведена закупка")
+                        elif self.verbose and signal.value == SELL and result == 'Sell':
+                            print("Произведена продажа")
+                        elif self.verbose and result == 'Enough':
+                            if signal.value == SELL:
+                                print("Не достаточно средств. ПРОДАЖА аннулирована.")
+                            if signal.value == BUY:
+                                print("Не достаточно средств. ПОКУПКА аннулирована.")
 
-                    # # Записываем текущий активный сигнал в *active_trade_signal*
-                    # self.active_trade_signal.append(signal.value)
+                        # # Записываем текущий активный сигнал в *active_trade_signal*
+                        # self.active_trade_signal.append(signal.value)
 
-            # except Exception as ex:
-            #     # Выводим ошибку выполнения
-            #     if self.verbose:
-            #         print("Не могу разметить ордер: {}".format(ex))
-            #     log.error("Не могу разметить ордер: {}".format(ex))
+                except Exception as ex:
+                    # Выводим ошибку выполнения
+                    if self.verbose:
+                        print("Не могу разметить ордер: {}".format(ex))
+                    log.error("Не могу разметить ордер: {}".format(ex))
             #
             #     # Пробую вычислить лимит сделки в BTC
             #     try:

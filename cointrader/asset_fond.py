@@ -1,12 +1,11 @@
 import sys
 
 from click._unicodefun import click
-
 import cointrader.config
 from cointrader.exchange import Poloniex
 
 
-class asset_fond:
+class asset_fond():
     def __init__(self, exchange, order_type="TOTAL", percent=100.0):
 
         # config = cointrader.config.Config(open(cointrader.config.get_path_to_config(), "r"))
@@ -22,7 +21,7 @@ class asset_fond:
         self.exchange = exchange._exchange
         self.btc = self.get_btc(percent)
         self.currency_pair = exchange._name
-        self.amount_btc = self.get_amount_btc()
+        self.amount_btc = self.get_amount_btc(0.0, backtest=True)
         self.percent = percent
         self.minimal_step_cost = .00001 * 1.0025
         self.error = ""
@@ -32,17 +31,20 @@ class asset_fond:
         self.print_used_btc()
 
     def get_allow_sell(self, amount_to_sell, rate):
-
-        diff_btc = (self.amount_btc - amount_to_sell) * rate
-        if diff_btc <= .00001 + (diff_btc * 0.0025):
-            return self.amount_btc
+        if amount_to_sell * rate <= .00015:
+            value = 1.00
+            amount_to_sell_in_btc = amount_to_sell * rate
+            while amount_to_sell_in_btc <= .00015:
+                amount_to_sell_in_btc = amount_to_sell_in_btc * value
+                value += 0.01
+            return amount_to_sell_in_btc / rate
         else:
-            amount_to_sell
+            return amount_to_sell
 
     def add_row(self, btc, amount_btc, order_type, first_sell=False, renew=False):
         if not self.rows:
-            self.rows.append(self._row_dict(btc, self.amount_btc, "INIT", first_sell))
-            self.rows.append(self._row_dict(btc, amount_btc, order_type, first_sell))
+            self.rows.append(self._row_dict(btc, self.get_amount_btc(amount_btc), "INIT", first_sell))
+            self.rows.append(self._row_dict(btc, amount_btc, "BUY", first_sell))
             self.order_type = "TOTAL"
             self.btc = 0.0
             self.amount_btc = 0.0
@@ -98,16 +100,18 @@ class asset_fond:
     def get_btc(self, percent):
         return self.exchange.coins['BTC'].btc_value / 100 * percent
 
-    def get_amount_btc(self):
-        try:
-            amount_btc = self.exchange.coins[self.currency_pair].btc_value
-        except:
-            amount_btc = 0.0
+    def get_amount_btc(self, amount_btc: float, backtest=False):
+        if not backtest:
+            try:
+                amount_btc = self.exchange._api.balance()[self.currency_pair.split("_")[1]]['quantity']
+            except:
+                amount_btc = 0.0
+
         return amount_btc
 
     def print_used_btc(self):
-        print("Торговая сумма на покупку BTC:{}".format(self.btc), end=" ")
-        print("Торговая сумма на продажу BTC:{}".format(self.amount_btc))
+        print("Торговая сумма на покупку BTC: {}".format(self.btc), end=" ")
+        print("Общий баланс: {} BTC. {}: {}".format(self.exchange.total_btc_value, self.currency_pair.split("_")[-1], self.amount_btc))
 
     def begin_tradind_test_btc(self):
         if self.btc > self.minimal_step_cost:

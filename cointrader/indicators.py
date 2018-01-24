@@ -89,7 +89,7 @@ def ema(chart, window=12):
     return Signal(signal, date, "EMA{}: {}".format(window, sma))
 
 
-def double_cross(chart, fast=13, slow=26):
+def double_cross(current_strategy, chart, fast=13, slow=26):
     """Generates a trade signal based on two moving averanges with
     different width. A BUY signal is generated if the faster EMA
     crosses the slower EMA in up direction and the faster EMA is higher
@@ -104,19 +104,18 @@ def double_cross(chart, fast=13, slow=26):
 
     """
 
+
     closing = chart.values()
     value = closing[-1][1]
     date = datetime.datetime.utcfromtimestamp(closing[-1][0])
     ema_1 = chart.ema(fast)[-1]
     ema_2 = chart.ema(slow)[-1]
-    if ema_1 > ema_2:
-        ema_diff = ema_1 - ema_2
-    elif ema_1 < ema_2:
-        ema_diff = ema_2 - ema_1
+    ema_diff = ema_2 - ema_1
+    if not current_strategy.EMA:
+        current_strategy.EMA.append(ema_diff)
+        current_strategy.EMA.append(ema_diff)
     else:
-        ema_diff = 0.0
-
-    ema_diff = round(abs(ema_diff), 6)
+        current_strategy.EMA.append(ema_diff)
 
     signal = WAIT
 
@@ -129,15 +128,16 @@ def double_cross(chart, fast=13, slow=26):
     growing_trade = ema_1 > ema_2
 
     if falling_trade:
-        trend = "Рынок ВНИЗ"
-        EMA_name = "ВХОД"
+        trend = "Рынок  ВНИЗ"
+        EMA_name = " ВХОД"
     elif growing_trade:
         trend = "Рынок ВВЕРХ"
         EMA_name = "ВЫХОД"
     else:
         trend = "ПОВОРОТ"
+        EMA_name = "ТОЧКА"
     print(date, trend,
-          "EMA:{} {}:{} EMA{}: {}, EMA{}: {}".format(signal, EMA_name, ema_diff, fast, ema_1, slow, ema_2),
+          "EMA:{:+.0f} {}:{:+.5e} EMA{}: {:.3}, EMA{}: {:.3}".format(signal, EMA_name, ema_diff, fast, ema_1, slow, ema_2),
           end=" ",
           flush=True)
     return Signal(signal, date, "EMA{}: {}, EMA{}: {} \"{}\")".format(fast, ema_1, slow, ema_2, trend))

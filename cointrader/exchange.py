@@ -170,7 +170,7 @@ class Market(object):
             bids = orderbook["bids"]  # Bids in the meaning of "I give you X for Y"
             best_offer = bids[-1]
             price = float(best_offer[0])
-        btc = amount * price
+            btc = amount * price
         if self._dry_run:
             btc = add_fee(btc)
             date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 
 class Strategy(object):
-
     """Docstring for Strategy. """
 
     def __str__(self):
@@ -21,7 +20,7 @@ class Strategy(object):
         """Dictionary with details on the signal(s)
         {"indicator": {"signal": 1, "details": Foo}}"""
 
-    def signal(self, chart, verbose = False):
+    def signal(self, chart, verbose=False):
         self.verbose = verbose
         """Will return either a BUY, SELL or WAIT signal for the given
         market"""
@@ -29,12 +28,11 @@ class Strategy(object):
 
 
 class NullStrategy(Strategy):
-
     """The NullStrategy does nothing than WAIT. It will emit not BUY or
     SELL signal and is therefor the default strategy when starting
     cointrader to protect the user from loosing money by accident."""
 
-    def signal(self, chart, verbose = False):
+    def signal(self, chart, verbose=False):
         """Will return either a BUY, SELL or WAIT signal for the given
         market"""
         self.verbose = verbose
@@ -45,7 +43,7 @@ class NullStrategy(Strategy):
 
 class Klondike(Strategy):
 
-    def signal(self, chart, verbose = False):
+    def signal(self, chart, verbose=False):
         self.verbose = verbose
         signal = macdh_momententum(chart)
         self.signals["MACDH_MOMEMENTUM"] = signal
@@ -57,12 +55,12 @@ class Klondike(Strategy):
 class Followtrend(Strategy):
     """Simple trend follow strategie."""
 
-
     def __init__(self):
 
         Strategy.__init__(self)
         self._macd = WAIT
         self.verbose = False
+        self.EMA = []
 
     def signal(self, chart, verbose=False, first_buy_price=777777777777777777777777777):
 
@@ -84,22 +82,25 @@ class Followtrend(Strategy):
         if macdh_signal.value == SELL:
             self._macd = SELL
         log.debug("macdh signal: {}".format(self._macd))
-        print("MACD histogram signal: {}".format(self._macd), end=" ", flush=True)
+        print("P: {:.5e} MACD: {:+.0f}".format(self._value, self._macd), end=" ", flush=True)
 
         # Finally we are using the double_cross signal as confirmation
         # of the former MACDH signal
-        dc_signal = double_cross(chart)
+        dc_signal = double_cross(current_strategy=self, chart=chart)
 
         list = chart.rsi()
         list_wr = chart.wr()
-        good_to_sell = (list_wr[-1] > 70 and first_buy_price < self._value)
-        good_to_buy = list[-1] < 53
+        good_to_sell = (list_wr[-1] > 63 and first_buy_price < self._value)
+        good_to_buy = list[-1] < 63
+
 
         # if self._macd == BUY and dc_signal.value == BUY:
         #     print("----->{}".format(list[-1]))
 
-        if (self._macd == BUY and dc_signal.value == BUY and good_to_buy) or (
-            self._macd == SELL and dc_signal.value == SELL):
+        if (self.EMA[-2] >= 0 > self.EMA[-1] or self.EMA[-2] < 0 <= self.EMA[-1]) \
+            and ((self._macd == BUY and dc_signal.value == BUY and good_to_buy)
+                or
+                (self._macd == SELL and dc_signal.value == SELL)):
             signal = dc_signal
             # print("Уровень 1: {}".format(list[-1]))
             # print("Уровень 2: {}".format(list_wr[-1]))
@@ -114,14 +115,14 @@ class Followtrend(Strategy):
         # if self.verbose:
         #     print("Итоговый сигнал @{}: {}".format(signal.date, signal.value), end="\n", flush=True)
 
-        log.debug("Итоговый сигнал @{}: {}".format(signal.date, signal.value))
+        log.debug("P: {:.5f} MACD+DC {}: {}".format(self._value, signal.date, signal.value))
         self.signals["DC"] = signal
         if list[-1] > 70:
             signal.over_sell = True
             SELL_ZONE += 1
             print(" SELL_ZONE: {} Курс: {}".format(SELL_ZONE, self._value))
         else:
-            print(" ")
+            print(" BUY_ZONE: {:.2f} ".format(list[-1]))
         #
         if signal.value == SELL:
             SELL_ZONE = 0

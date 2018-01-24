@@ -6,6 +6,8 @@ import json
 import time
 import hmac
 import hashlib
+from functools import wraps
+
 import requests
 import datetime
 
@@ -115,6 +117,51 @@ class Api(object):
         raise NotImplementedError()
 
 
+def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
+    """Retry calling the decorated function using an exponential backoff.
+
+    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
+    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
+
+    :param ExceptionToCheck: the exception to check. may be a tuple of
+        exceptions to check
+    :type ExceptionToCheck: Exception or tuple
+    :param tries: number of times to try (not retry) before giving up
+    :type tries: int
+    :param delay: initial delay between retries in seconds
+    :type delay: int
+    :param backoff: backoff multiplier e.g. value of 2 will double the delay
+        each retry
+    :type backoff: int
+    :param logger: logger to use. If None, print
+    :type logger: logging.Logger instance
+    """
+
+    def deco_retry(f):
+
+        @wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+            while mtries > 1:
+                try:
+                    return f(*args, **kwargs)
+                except ExceptionToCheck as e:
+                    msg = "%s, Retrying in %d seconds..." % (str(e), mdelay)
+                    if logger:
+                        logger.warning(msg)
+                    else:
+                        print
+                        msg
+                    time.sleep(mdelay)
+                    mtries -= 1
+                    mdelay *= backoff
+            return f(*args, **kwargs)
+
+        return f_retry  # true decorator
+
+    return deco_retry
+
+
 class Poloniex(Api):
     MAKER_FEE = 0.0015
     TAKER_FEE = 0.0025
@@ -183,6 +230,7 @@ class Poloniex(Api):
             result = {c: result[c] for c in pairs if result.get(c)}
         return result
 
+    @retry(Exception, tries=4)
     def book(self, currency):
         """
         Returns the order book for a given market, as well as a sequence
@@ -199,9 +247,13 @@ class Poloniex(Api):
                   "depth": 10}
 
         # r = requests.get("https://poloniex.com/public", params=params)
-        r = reconnect("https://poloniex.com/public",params=params, headers=None, action="get")
-        result = json.loads(r.content.decode())
+        result = self.retry_book(params)
         self._check_response(result)
+        return result
+
+    def retry_book(self, params):
+        r = reconnect("https://poloniex.com/public", params=params, headers=None, action="get")
+        result = json.loads(r.content.decode())
         return result
 
     def chart(self, currency, start, end, period=1800):
@@ -309,6 +361,7 @@ class Poloniex(Api):
         self._check_response(result)
         return result
 
+
 def reconnect(link, params, headers=None, action="get"):
     import requests
     from urllib3.util.retry import Retry
@@ -326,3 +379,4 @@ def reconnect(link, params, headers=None, action="get"):
         return session.get(link, params=params)
     elif action == "post":
         return session.post(link, data=params, headers=headers)
+

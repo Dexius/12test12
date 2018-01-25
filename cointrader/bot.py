@@ -120,7 +120,7 @@ def create_bot(market, strategy, resolution, start, end, verbose, percent, autom
     active = Active(date, market._name)
 
     bot.trades.append(trade)
-    bot.active.append(trade)
+    bot.activity.append(active)
 
     # # Добавляем список активных торгов
     # bot.active_trade_signal = []
@@ -258,7 +258,7 @@ class Cointrader(Base):
     strategy = sa.Column(sa.String, nullable=False)
     automatic = sa.Column(sa.Boolean, nullable=False)
     trades = sa.orm.relationship("Trade")
-    trades = sa.orm.relationship("Active")
+    activity = sa.orm.relationship("Active")
 
     def __init__(self, market, strategy, resolution="30m", start=None, end=None, automatic=False, percent=100):
 

@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from cointrader import db, STRATEGIES
 from cointrader.config import Config, get_path_to_config
 from cointrader.exchange import Poloniex, Market
-from cointrader.bot import init_db, get_bot, create_bot
+from cointrader.bot import init_db, get_bot, create_bot, Active
 
 # Создание лога
 logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG,
@@ -38,7 +38,6 @@ pass_context = click.make_pass_decorator(Context, ensure=True)
 def main(ctx):
     """Console script for cointrader on the Poloniex exchange
     :param ctx:
-    :param config:
     """
     init_db()
     config = Config(open(get_path_to_config(), "r"))
@@ -59,9 +58,9 @@ def main(ctx):
 @click.option("--percent", help="Процент торговли от всей суммы.", is_flag=False)
 @click.option("--best", help="", is_flag=False)
 @click.option("--searchpoint", help="", is_flag=False)
-@click.option("--best_pass_nth", help="", default="0")
+# @click.option("--best_pass_nth", help="", default="0")
 @pass_context
-def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, best_pass_nth, searchpoint):
+def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, searchpoint):
     """Start a new bot on the given market and the given amount of BTC"""
 
     # Build the market on which the bot will operate
@@ -88,21 +87,22 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
                                                     verbose, searchpoint)
 
     trade_to_minus = False
-    if int(best_pass_nth) == 0:
-        if not best_testing_market:
-            trade_to_minus = True
-        elif best_pair != None and best:
+    # if int(best_pass_nth) == 0:
+    if not best_testing_market:
+        trade_to_minus = True
+    elif best_pair != None:
+        if best and not is_active(best_pair["market"]):
             print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"]._name, best_pair["profit"]))
             best_pair["market"]._backtrade = False
             bot = get_bot(best_pair["market"], strategy, resolution, start, end, verbose, percent, automatic,
                           memory_only=False)
             trade_to_minus = bot.start(backtest=False, automatic=automatic)
 
-        elif best_testing_market[-1]["profit"] > 3 and not best:
-            best_testing_market[-1]["market"]._backtrade = False
-            bot = get_bot(best_testing_market[-1]["market"], strategy, resolution, start, end, verbose, percent, automatic,
-                          memory_only=False)
-            trade_to_minus = bot.start(backtest=False, automatic=automatic)
+    elif best_testing_market[-1]["profit"] > 3 and not best and not is_active(best_testing_market[-1]["market"]):
+        best_testing_market[-1]["market"]._backtrade = False
+        bot = get_bot(best_testing_market[-1]["market"], strategy, resolution, start, end, verbose, percent, automatic,
+                      memory_only=False)
+        trade_to_minus = bot.start(backtest=False, automatic=automatic)
 
     if trade_to_minus:
         print("На данной паре заработок отсутсвует.")
@@ -121,17 +121,23 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
                 best_pair, best_testing_market = find_best_pair(automatic, ctx, end, market, percent, resolution, start,
                                                                 strategy,
                                                                 verbose, searchpoint)
-            index = 0
             for item in best_testing_market:
                 item["market"]._backtrade = False
-                if index >= int(best_pass_nth) or len(best_testing_market) <= int(best_pass_nth):
+                if not is_active(item["market"]):
                     print("\nВыбрана пара: %s, заработок: %f" % (item["market"]._name, item["profit"]))
                     bot = get_bot(item["market"], strategy, resolution, start, end, verbose, percent, automatic,
                                   memory_only=False)
                     to_do = bot.start(backtest=False, automatic=automatic)
-                index += 1
 
             trade_to_minus = True
+
+
+def is_active(market):
+    activities = db.query(Active).filter(Active.currency == market._name)
+    if activities == None:
+        return False
+    else:
+        return True
 
 
 def find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy, verbose, searchpoint):
@@ -145,8 +151,15 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
             if not test_markets:
                 time.sleep(1)
                 print("Ищу пары по условию: (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 3)")
-    db.delete(bot)
-    db.commit()
+
+    try:
+        for active in bot.activity:
+            db.delete(active)
+
+        db.delete(bot)
+        db.commit()
+    finally:
+        pass
     best_testing_market = []
     test_markets.append(set_market(ctx, market._name, backtrade=True))
     index = 0
@@ -162,12 +175,14 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
                 pass
         bot.start(backtest=True, automatic=True)
         try:
+            for active in bot.activity:
+                db.delete(active)
+
             db.delete(bot)
             db.commit()
-
-        except:
+        finally:
             pass
-        if bot.profit > 5:
+        if bot.profit > 3 and bot.trend != 'Рынок ВВЕРХ':
             best_testing_market.append({"market": bot._market, "profit": bot.profit})
             index += 1
     from operator import itemgetter
@@ -228,7 +243,7 @@ def set_market(ctx, market, backtrade):
 def set_start_end():
     try:
         now_time = datetime.now()
-        delta = timedelta(days=1.5)
+        delta = timedelta(days=1)
         date_N_days_ago = now_time - delta
 
         start = date_N_days_ago

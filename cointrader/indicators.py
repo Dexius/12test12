@@ -106,10 +106,11 @@ def double_cross(current_strategy, chart, fast=13, slow=26):
 
 
     closing = chart.values()
-    value = closing[-1][1]
     date = datetime.datetime.utcfromtimestamp(closing[-1][0])
+    value = closing[-1][1]
     ema_1 = chart.ema(fast)[-1]
     ema_2 = chart.ema(slow)[-1]
+
     ema_diff = ema_2 - ema_1
     if not current_strategy.EMA:
         current_strategy.EMA.append(ema_diff)
@@ -136,10 +137,13 @@ def double_cross(current_strategy, chart, fast=13, slow=26):
     else:
         trend = "ПОВОРОТ"
         EMA_name = "ТОЧКА"
+
+    current_strategy.trend.append(trend)
+
     print(date, trend,
-          "EMA:{:+.0f} {}:{:+.5e} EMA{}: {:.3f}, EMA{}: {:.3f}".format(signal, EMA_name, ema_diff, fast, ema_1, slow, ema_2),
-          end=" ",
-          flush=True)
+          "EMA:{:+.0f} {}:{:+.5e} EMA{}: {:.3e}, EMA{}: {:.3e}".format(signal, EMA_name, ema_diff, fast, ema_1, slow,
+                                                                       ema_2),
+          end=" ", flush=True)
     return Signal(signal, date, "EMA{}: {}, EMA{}: {} \"{}\")".format(fast, ema_1, slow, ema_2, trend))
 
 

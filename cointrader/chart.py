@@ -114,3 +114,7 @@ class Chart(object):
     def wr(self):
         self._stock.get('wr_9')
         return self._stock['wr_9'].tolist()
+
+    def dmi(self):
+        self._stock.get('adx')
+        return self._stock['adx'].tolist()

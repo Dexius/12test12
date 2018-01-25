@@ -39,11 +39,13 @@ class asset_fond():
                 value += 0.01
             return amount_to_sell_in_btc / rate
         else:
+            if self.amount_btc - amount_to_sell * rate <= .00015:
+                amount_to_sell = self.amount_btc
             return amount_to_sell
 
-    def add_row(self, btc, amount_btc, order_type, first_sell=False, renew=False):
+    def add_row(self, btc, amount_btc, order_type, first_sell=False, renew=False, backtest=False):
         if not self.rows:
-            self.rows.append(self._row_dict(btc, self.get_amount_btc(amount_btc), "INIT", first_sell))
+            self.rows.append(self._row_dict(btc, self.get_amount_btc(0.0, backtest=backtest), "INIT", first_sell))
             self.rows.append(self._row_dict(btc, amount_btc, "BUY", first_sell))
             self.order_type = "TOTAL"
             self.btc = 0.0
@@ -55,6 +57,9 @@ class asset_fond():
 
         if renew:
             self.rows = []
+            self.amount_btc = 0.0
+            self.btc = btc
+            self.sell_percent = 0.0
 
     def _row_dict(self, btc, amount_btc, order_type, first_sell):
         return {"btc": btc, "amount_btc": amount_btc, "order_type": order_type, "first_sell": first_sell}
@@ -68,14 +73,13 @@ class asset_fond():
             if row["order_type"] == "SELL":
                 total_btc += row["btc"]
                 total_amount_btc -= row["amount_btc"]
-                sell_percent = float("{0:.2f}".format(total_btc / (buy_btc * 0.01)))
+                sell_percent = float("{0:.2f}".format(100 - total_amount_btc / (self.rows[1]["amount_btc"] * 0.01)))
             elif row["order_type"] == "BUY":
                 total_btc -= row["btc"]
                 total_amount_btc += row["amount_btc"]
             elif row["order_type"] == "INIT":
                 total_btc = row["btc"]
                 total_amount_btc = row["amount_btc"]
-                buy_btc = total_btc
 
         self.btc = total_btc
         self.amount_btc = total_amount_btc
@@ -110,7 +114,7 @@ class asset_fond():
         return amount_btc
 
     def print_used_btc(self):
-        print("Торговая сумма на покупку BTC: {}".format(self.btc), end=" ")
+        print("\nТорговая сумма на покупку BTC: {}".format(self.btc), end=" ")
         print("Общий баланс: {} BTC. {}: {}".format(self.exchange.total_btc_value, self.currency_pair.split("_")[-1], self.amount_btc))
 
     def begin_tradind_test_btc(self):

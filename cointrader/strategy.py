@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import datetime
 import logging
+import string
+
 from cointrader.indicators import (
     SELL_ZONE, WAIT, BUY, SELL, Signal, macdh_momententum, macdh, double_cross
 )
@@ -62,7 +64,7 @@ class Followtrend(Strategy):
         self.verbose = False
         self.EMA = []
 
-    def signal(self, chart, verbose=False, first_buy_price=777777777777777777777777777):
+    def signal(self, chart, verbose=False, first_buy_price=777777777777777777777777777, backtest=False, backtest_tick=0):
 
         global SELL_ZONE
         self.verbose = verbose
@@ -82,7 +84,7 @@ class Followtrend(Strategy):
         if macdh_signal.value == SELL:
             self._macd = SELL
         log.debug("macdh signal: {}".format(self._macd))
-        print("P: {:.5e} MACD: {:+.0f}".format(self._value, self._macd), end=" ", flush=True)
+        print("\nP: {:.5e} MACD: {:+.0f}".format(self._value, self._macd), end=" ")
 
         # Finally we are using the double_cross signal as confirmation
         # of the former MACDH signal
@@ -90,8 +92,10 @@ class Followtrend(Strategy):
 
         list = chart.rsi()
         list_wr = chart.wr()
+        list_dmi = chart.dmi()
+        print(" ADX: {:+.2f}".format(list_dmi[-1]), end=" ")
         good_to_sell = (list_wr[-1] > 63 and first_buy_price < self._value)
-        good_to_buy = list[-1] < 63
+        good_to_buy = list[-1] < 63 and list_dmi[-1] > 33
 
 
         # if self._macd == BUY and dc_signal.value == BUY:
@@ -113,18 +117,84 @@ class Followtrend(Strategy):
             signal = Signal(WAIT, dc_signal.date)
 
         # if self.verbose:
-        #     print("Итоговый сигнал @{}: {}".format(signal.date, signal.value), end="\n", flush=True)
+        #     print("Итоговый сигнал @{}: {}".format(signal.date, signal.value), end="\n")
 
         log.debug("P: {:.5f} MACD+DC {}: {}".format(self._value, signal.date, signal.value))
         self.signals["DC"] = signal
         if list[-1] > 70:
             signal.over_sell = True
             SELL_ZONE += 1
-            print(" SELL_ZONE: {} Курс: {}".format(SELL_ZONE, self._value))
+            print(" SELL_ZONE: {:.2f}".format(SELL_ZONE, self._value), end=" ")
         else:
-            print(" BUY_ZONE: {:.2f} ".format(list[-1]))
+            print(" BUY_ZONE: {:.2f} ".format(list[-1]), end=" ")
         #
         if signal.value == SELL:
             SELL_ZONE = 0
 
+        only_closes = []
+        if backtest:
+            current_chart = chart.data[120 - 3:backtest_tick]
+        else:
+            if len(chart.data) >= 2:
+                current_chart = chart.data[:-2]
+            else:
+                current_chart = chart.data
+        for x in current_chart[:-2]:
+            only_closes.append(x["close"])
+
+        if current_chart:
+            last_max, last_min = self.FindMaximaMinima(numbers=only_closes)
+            report = ""
+            current_price = current_chart[-1]['close']
+            if last_max:
+                if len(last_max) == 1:
+                    last_max = last_max[-1]
+                else:
+                    last_max = max(last_max)
+                    if current_price > last_max:
+                        report = report + "Пробитие локального МАКСИМУМА "
+
+            if last_min:
+                if len(last_min) == 1:
+                    last_min = last_min[-1]
+                else:
+                    last_min = min(last_min)
+                    if current_price < last_min:
+                        report = report.join("Пробитие локального МИНИМУМА")
+
+        if report:
+            print(report, end=" ")
+
+
         return signal
+
+    """
+    Find All Local Maximums and Minimums in a list of Integers.
+    An element is a local maximum and minimums if it is larger than the two elements adjacent to it, or if it is the first or last element and larger than the one element adjacent to it.
+    Design an algorithm to find all local maxima and mimima if they exist.
+    Example:  for 3, 2, 4, 1 the local maxima are at indices 0 and 2.  
+    """
+    def FindMaximaMinima(self, numbers: list):
+
+        maxima = []
+        minima = []
+        length = len(numbers)
+        if length >= 2:
+            if numbers[0] > numbers[1]:
+                maxima.append(numbers[0])
+            else:
+                minima.append(numbers[0])
+
+            if length > 3:
+                for i in range(1, length - 1):
+                    if numbers[i] > numbers[i - 1] and numbers[i] > numbers[i + 1]:
+                        maxima.append(numbers[i])
+                    elif numbers[i] < numbers[i - 1] and numbers[i] < numbers[i + 1]:
+                        minima.append(numbers[i])
+
+            if numbers[length - 1] > numbers[length - 2]:
+                maxima.append(numbers[length - 1])
+            elif numbers[length - 1] < numbers[length - 2]:
+                minima.append(numbers[length - 1])
+        return maxima, minima
+

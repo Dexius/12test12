@@ -82,6 +82,9 @@ def load_bot(market, strategy, resolution, start, end, verbose, percent, automat
             # # Добавляем список активных торгов
             # bot.active_trade_signal = []
 
+            bot.spread = market._exchange.get_spread(bot._market._name)
+            bot.spread_tick = market._exchange.get_spread_tick(bot._market._name)
+
             db.commit()
             return bot
         else:
@@ -95,6 +98,7 @@ def create_bot(market, strategy, resolution, start, end, verbose, percent, autom
     bot = Cointrader(market, strategy, resolution, start, end, automatic, percent)
     bot.verbose = verbose
     bot.spread = market._exchange.get_spread(bot._market._name)
+    bot.spread_tick = market._exchange.get_spread_tick(bot._market._name)
     if bot.verbose:
         print("Создаю нового бота {}".format(bot.market))
     log.info("Создаю нового бота {}".format(bot.market))
@@ -113,7 +117,10 @@ def create_bot(market, strategy, resolution, start, end, verbose, percent, autom
     date = datetime.datetime.utcfromtimestamp(chart.get_first_point()["date"])
 
     trade = Trade(date, "INIT", 0, 0, market._name, rate, bot.fond.get_amount_btc(0.0), 0, bot.fond.btc, 0)
+    active = Active(date, market._name)
+
     bot.trades.append(trade)
+    bot.active.append(trade)
 
     # # Добавляем список активных торгов
     # bot.active_trade_signal = []
@@ -162,6 +169,7 @@ def get_bot(market, strategy, resolution, start, end, verbose, percent, automati
     bot = load_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only)
     if bot is None:
         bot = create_bot(market, strategy, resolution, start, end, verbose, percent, automatic)
+
     return bot
 
 
@@ -213,14 +221,31 @@ class Trade(Base):
         self.btc_taxed = btc_taxed
         self.minimal_count = 0
         if self.order_type == "BUY":
-            print("{}: BUY {} @ {} paid -> {} BTC".format(self.date, self.amount, self.rate, self.btc))
+            print("\n{}: BUY {} @ {} paid -> {} BTC".format(self.date, self.amount, self.rate, self.btc))
             log.info("{}: BUY {} @ {} paid -> {} BTC".format(self.date, self.amount, self.rate, self.btc))
         elif self.order_type == "SELL":
-            print("{}: SELL {} @ {} earned -> {} BTC".format(self.date, self.amount, self.rate, self.btc))
+            print("\n{}: SELL {} @ {} earned -> {} BTC".format(self.date, self.amount, self.rate, self.btc))
             log.info("{}: SELL {} @ {} earned -> {} BTC".format(self.date, self.amount, self.rate, self.btc))
-        else:
-            print("{}: INIT {} BTC {} COINS".format(self.date, self.btc, self.amount))
+        elif self.order_type == "INIT":
+            print("\n{}: INIT {} BTC {} COINS".format(self.date, self.btc, self.amount))
             log.info("{}: INIT {} BTC {} COINS".format(self.date, self.btc, self.amount))
+
+class Active(Base):
+    """All avtive boot of cointrader are saved in the database. A active can either be or not."""
+    __tablename__ = "active"
+    id = sa.Column(sa.Integer, primary_key=True)
+    bot_id = sa.Column(sa.Integer, sa.ForeignKey('bots.id'))
+    date = sa.Column(sa.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    currency = sa.Column(sa.String, nullable=False)
+
+
+    def __init__(self, date, currency):
+
+            if not isinstance(date, datetime.datetime):
+                self.date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+            else:
+                self.date = date
+            self.currency = currency
 
 
 class Cointrader(Base):
@@ -233,6 +258,7 @@ class Cointrader(Base):
     strategy = sa.Column(sa.String, nullable=False)
     automatic = sa.Column(sa.Boolean, nullable=False)
     trades = sa.orm.relationship("Trade")
+    trades = sa.orm.relationship("Active")
 
     def __init__(self, market, strategy, resolution="30m", start=None, end=None, automatic=False, percent=100):
 
@@ -251,6 +277,7 @@ class Cointrader(Base):
         self.detouch = False
         self.profit = 0
         self.spread = 0.0
+        self.spread_tick = 0.0
 
     def check_stop(self, stat):
         # spread = self._market._exchange.get_spread(self._market._name)
@@ -261,7 +288,9 @@ class Cointrader(Base):
         :return:
         """
 
-        if round(stat['profit_cointrader'], 4) < -3:
+        if float(stat['profit_cointrader']) < float(-3) \
+            or (float(stat['profit_cointrader_before']) > float(stat['profit_cointrader'])
+                and 0 != float(stat['profit_cointrader_before'])):
             self.detouch = True
 
     def get_last_sell(self):
@@ -427,6 +456,9 @@ class Cointrader(Base):
 
         trader_end_btc = trader_start_btc
         trader_end_amount = trader_start_amount
+        trader_start_value = trader_start_btc + trader_start_amount * market_start_rate
+        market_start_value = trader_start_value
+        result_step = []
         for trade in self.trades:
             if trade.order_type == "BUY":
                 trader_end_amount += trade.amount
@@ -434,9 +466,56 @@ class Cointrader(Base):
             elif trade.order_type == "SELL":
                 trader_end_btc += trade.btc
                 trader_end_amount -= trade.amount
+                market_end_value, trader_end_value, trader_profit, market_profit, profit_chart, profit_cointrader = self.calc(
+                    market_end_rate,
+                    market_start_amount,
+                    market_start_btc,
+                    market_start_value,
+                    trader_end_amount,
+                    trader_end_btc,
+                    trader_start_value)
+                result_step.append({
+                    "trader_end_value": trader_end_value,
+                    "market_end_value": market_end_value,
+                    "trader_profit": trader_profit,
+                    "market_profit": market_profit,
+                    "profit_chart": profit_chart,
+                    "profit_cointrader": profit_cointrader,
 
-        trader_start_value = trader_start_btc + trader_start_amount * market_start_rate
-        market_start_value = trader_start_value
+                })
+
+        market_end_value, trader_end_value, trader_profit, market_profit, profit_chart, profit_cointrader = self.calc(
+            market_end_rate,
+            market_start_amount,
+            market_start_btc,
+            market_start_value,
+            trader_end_amount,
+            trader_end_btc,
+            trader_start_value)
+
+        stat = {
+            "start": start_date,
+            "end": end_date,
+            "market_start_value": market_start_value,
+            "market_end_value": market_end_value,
+            "profit_chart": profit_chart,
+            "trader_start_value": trader_start_value,
+            "trader_end_value": trader_end_value,
+            "profit_cointrader": profit_cointrader,
+            "profit_cointrader_before": result_step[-2]['profit_cointrader'] if len(result_step) > 1 else 0.0,
+        }
+
+        if delete_trades:
+            for trade in self.trades:
+                try:
+                    db.delete(trade)
+                except:
+                    pass
+            db.commit()
+        return stat
+
+    def calc(self, market_end_rate, market_start_amount, market_start_btc, market_start_value, trader_end_amount,
+             trader_end_btc, trader_start_value):
         trader_end_value = trader_end_btc + trader_end_amount * market_end_rate
         market_end_value = market_start_btc + market_start_amount * market_end_rate
         trader_profit = trader_end_value - trader_start_value
@@ -450,24 +529,7 @@ class Cointrader(Base):
         if trader_end_value:
             profit_cointrader = trader_profit / trader_end_value * 100
 
-        stat = {
-            "start": start_date,
-            "end": end_date,
-            "market_start_value": market_start_value,
-            "market_end_value": market_end_value,
-            "profit_chart": profit_chart,
-            "trader_start_value": trader_start_value,
-            "trader_end_value": trader_end_value,
-            "profit_cointrader": profit_cointrader,
-        }
-        if delete_trades:
-            for trade in self.trades:
-                try:
-                    db.delete(trade)
-                except:
-                    pass
-            db.commit()
-        return stat
+        return market_end_value, trader_end_value, trader_profit, market_profit, profit_chart, profit_cointrader
 
     def _in_time(self, date):
         return (self._start is None or self._start <= date) and (self._end is None or date <= self._end)
@@ -523,10 +585,6 @@ class Cointrader(Base):
                     result = 'Sell'
                     # Выводим статистику
                     click.echo(render_bot_statistic(self, self.stat()))
-
-                stat = self.stat(memory_only)
-                self.check_stop(stat)
-
         else:
             if (signal.value == BUY and self.fond.btc > 0) or (
                 signal.value == SELL and self.fond.amount_btc > 0) or (
@@ -543,11 +601,12 @@ class Cointrader(Base):
                                   btc=self.fond.btc, amount_taxed=0, amount=total_amount)
 
                     self.fond.add_row(btc=self.fond.btc, amount_btc=total_amount, order_type=order_type,
-                                      first_sell=first_sell)
+                                      first_sell=first_sell, backtest=backtest)
 
                     self.state = 1
                     db.commit()
                     self.trades.append(trade)
+                    result = 'Buy'
 
                     # Выводим статистику
                     click.echo(render_bot_statistic(self, self.stat()))
@@ -563,9 +622,10 @@ class Cointrader(Base):
                     # selling but we now have some BTC.
                     self.state = 0
                     self.fond.add_row(btc=total_btc, amount_btc=total_amount, order_type=order_type,
-                                      first_sell=first_sell, renew=True)
+                                      first_sell=first_sell, renew=True, backtest=backtest)
                     db.commit()
                     self.trades.append(trade)
+                    result = 'Sell'
 
                     # Выводим статистику
                     click.echo(render_bot_statistic(self, self.stat()))
@@ -589,12 +649,10 @@ class Cointrader(Base):
                                       renew=renew)
                     db.commit()
                     self.trades.append(trade)
+                    result = 'Sell'
 
                     # Выводим статистику
                     click.echo(render_bot_statistic(self, self.stat()))
-
-                stat = self.stat(memory_only)
-                self.check_stop(stat)
 
         return result
 
@@ -618,6 +676,7 @@ class Cointrader(Base):
         interval = self._get_interval(automatic, backtest)
         chart_last = None
         while 1:
+
             if chart_last == None and not backtest and automatic:
                 print("Синхронизируемся по времени свечи.")
                 while 1:
@@ -632,9 +691,11 @@ class Cointrader(Base):
                 chart = self._market.get_chart(self._resolution, self._start, self._end)
             else:
                 chart = self._market.get_chart(self._resolution, None, None)
-            signal = self._strategy.signal(chart, self.verbose, self.get_stop_limit())
+            signal = self._strategy.signal(chart, self.verbose, self.get_stop_limit(), backtest,
+                                           self._market._backtest_tick)
             closing = chart.values()
             _value = closing[-1][1]
+
             first_sell = self.fond.amount_btc > 0 and (self.first_sell(_value) or signal.over_sell)
             if signal.value == BUY:
                 first_sell = False
@@ -704,32 +765,34 @@ class Cointrader(Base):
                 """ TODO: """
 
             if signal:
-                # try:
+                try:
                 #     if not self.active_trade_signal:
                 #         self.active_trade_signal.append(signal.value)
 
-                if signal.value != WAIT or first_sell:
+                    if signal.value != WAIT or first_sell:
 
-                    result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
-                                                 first_sell=first_sell)
-                    # self.active_trade_signal[0] = signal.value
-                    if self.verbose and signal.value == BUY and result == 'Buy':
-                        print("Произведена закупка")
-                    elif self.verbose and signal.value == SELL and result == 'Sell':
-                        print("Произведена продажа")
-                    elif self.verbose and result == 'Enough':
-                        if signal.value == SELL:
-                            print("Не достаточно средств. ПРОДАЖА аннулирована.")
-                        if signal.value == BUY:
-                            print("Не достаточно средств. ПОКУПКА аннулирована.")
+                        result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
+                                                     first_sell=first_sell)
+                        # self.active_trade_signal[0] = signal.value
+                        if self.verbose and signal.value == BUY and result == 'Buy':
+                            print("Произведена закупка")
+                        elif self.verbose and signal.value == SELL and result == 'Sell':
+                            print("Произведена полная продажа")
+                        elif first_sell and result == 'Sell':
+                            print("Произведена частичная продажа")
+                        # elif self.verbose and result == 'Enough':
+                        #     if signal.value == SELL:
+                        #         print("Не достаточно средств. ПРОДАЖА аннулирована.")
+                        #     if signal.value == BUY:
+                        #         print("Не достаточно средств. ПОКУПКА аннулирована.")
 
-                    # # Записываем текущий активный сигнал в *active_trade_signal*
-                    # self.active_trade_signal.append(signal.value)
+                        # # Записываем текущий активный сигнал в *active_trade_signal*
+                        # self.active_trade_signal.append(signal.value)
 
-            # except Exception as ex:
-            #     # Выводим ошибку выполнения
-            #     if self.verbose:
-            #         print("Не могу разметить ордер: {}".format(ex))
+                except Exception as ex:
+                    # Выводим ошибку выполнения
+                    if self.verbose:
+                        print("Не могу разметить ордер: {}".format(ex))
             #     log.error("Не могу разметить ордер: {}".format(ex))
             #
             #     # Пробую вычислить лимит сделки в BTC
@@ -822,14 +885,21 @@ class Cointrader(Base):
                         show(p)
 
                     if self.verbose:
-                        print("Тестирование завершено")
+                        print("\nТестирование завершено")
                     log.info("Тестирование завершено")
                     break
 
-            time.sleep(interval)
-
-        stat = self.stat(memory_only)
-        self.check_stop(stat)
+            stat = self.stat(memory_only)
+            self.check_stop(stat)
+            if self.detouch:
+                if self.fond.amount_btc:
+                    signal = Signal(SELL, datetime.datetime.utcnow())
+                    first_sell = False
+                else:
+                    print("\n Бот отключен")
+                    break
+            else:
+                time.sleep(interval)
 
         return self.detouch
 

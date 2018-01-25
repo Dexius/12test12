@@ -16,7 +16,7 @@ requirements = [
     'sqlalchemy',
     'stockstats',
     'termcolor',
-    'terminaltables'
+    'terminaltables', 'pandas'
     # TODO: put package requirements here
 ]
 

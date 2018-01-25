@@ -54,7 +54,7 @@ class Market(object):
     @property
     def currency(self):
         pair = self._name.split("_")
-        return pair[1]
+        return pair[1]\
 
     @property
     def url(self):
@@ -372,3 +372,14 @@ class Poloniex(Exchange):
         last_bid = float(list['bids'][0][0])
         last_ask = float(list['asks'][0][0])
         return (last_ask - last_bid) / last_ask * 0.01
+
+    def get_spread_tick(self, currency):
+        """
+        Get spread percent
+        :param currency:
+        :return spread percent:
+        """
+        list = self._api.book(currency=currency)
+        last_bid = float(list['bids'][0][0])
+        last_ask = float(list['asks'][0][0])
+        return (last_ask - last_bid)

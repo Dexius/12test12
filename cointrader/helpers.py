@@ -84,7 +84,7 @@ def render_bot_statistic(self, stat):
     out.append(["Бот", stat["trader_start_value"], stat["trader_end_value"], "{}".format(colorize_value(round(stat["profit_cointrader"], 4)))])
     out.append(["Биржа", stat["market_start_value"], stat["market_end_value"], "{}".format(colorize_value(round(stat["profit_chart"], 4)))])
     table = AsciiTable(out).table
-    self.profit = round(stat["profit_cointrader"], 4)
+    self.profit = stat["profit_cointrader"]
 
     return "\n".join(["\nСтатистика:", table])
 

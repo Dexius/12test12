@@ -3,10 +3,10 @@
 import logging
 import os.path
 import sys
-
+import time
 import click
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from terminaltables import AsciiTable
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -88,22 +88,24 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
                                                     verbose, searchpoint)
 
     trade_to_minus = False
-    if not best_testing_market:
-        trade_to_minus =  True
-    elif best_pair != None and best and  int(best_pass_nth) == 0:
-        print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"]._name, best_pair["profit"]))
-        best_pair["market"]._backtrade = False
-        bot = get_bot(best_pair["market"], strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
-        trade_to_minus = bot.start(backtest=False, automatic=automatic)
+    if int(best_pass_nth) == 0:
+        if not best_testing_market:
+            trade_to_minus = True
+        elif best_pair != None and best:
+            print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"]._name, best_pair["profit"]))
+            best_pair["market"]._backtrade = False
+            bot = get_bot(best_pair["market"], strategy, resolution, start, end, verbose, percent, automatic,
+                          memory_only=False)
+            trade_to_minus = bot.start(backtest=False, automatic=automatic)
 
-    elif best_testing_market[-1]["profit"] > 3 and not best and int(best_pass_nth) == 0:
-        best_testing_market[-1]["market"]._backtrade = False
-        bot = get_bot(best_testing_market[-1]["market"], strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
-        trade_to_minus = bot.start(backtest=False, automatic=automatic)
+        elif best_testing_market[-1]["profit"] > 3 and not best:
+            best_testing_market[-1]["market"]._backtrade = False
+            bot = get_bot(best_testing_market[-1]["market"], strategy, resolution, start, end, verbose, percent, automatic,
+                          memory_only=False)
+            trade_to_minus = bot.start(backtest=False, automatic=automatic)
 
     if trade_to_minus:
         print("На данной паре заработок отсутсвует.")
-
 
     if best:
         to_do = True
@@ -124,7 +126,8 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
                 item["market"]._backtrade = False
                 if index >= int(best_pass_nth) or len(best_testing_market) <= int(best_pass_nth):
                     print("\nВыбрана пара: %s, заработок: %f" % (item["market"]._name, item["profit"]))
-                    bot = get_bot(item["market"], strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
+                    bot = get_bot(item["market"], strategy, resolution, start, end, verbose, percent, automatic,
+                                  memory_only=False)
                     to_do = bot.start(backtest=False, automatic=automatic)
                 index += 1
 
@@ -136,7 +139,12 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
     bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
     df = pd.DataFrame.from_dict(bot._market._exchange.markets, orient='index')
     if len(df):
-        test_markets = print_top_trends(ctx, df, market, backtrade=False, searchpoint=searchpoint)
+        while not test_markets:
+            mask = (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 3)
+            test_markets = print_top_trends(ctx, df, market, backtrade=False, searchpoint=searchpoint, mask=mask)
+            if not test_markets:
+                time.sleep(1)
+                print("Ищу пары по условию: (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 3)")
     db.delete(bot)
     db.commit()
     best_testing_market = []
@@ -186,11 +194,10 @@ def best_markets_print(best_testing_market):
     return best_pair
 
 
-def print_top_trends(ctx, df, market, backtrade, searchpoint):
+def print_top_trends(ctx, df, market, backtrade, searchpoint, mask):
     df['change'] = df.change.astype(float)
     df['volume'] = df.volume.astype(float)
-    df = df.sort_values(by=['volume', 'change'], ascending=False)
-    df_filtered = df[(df['volume'] > 5) & (df['change'] > -12) & (df['change'] < -7)]
+    df_filtered = df[mask]
     df_filtered = df_filtered.sort_values(by=['change'], ascending=searchpoint)
     test_markets = []
     out = [["ПАРА", "ОБЪЕМ", "ИЗМЕНЕНИЯ"]]

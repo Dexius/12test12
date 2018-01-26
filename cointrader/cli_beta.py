@@ -26,6 +26,7 @@ class Context(object):
 
     def __init__(self):
         self.exchange = None
+        self.nonce = 1471033830007660
 
 
 # Создание пустого декоратора
@@ -41,11 +42,16 @@ def main(ctx):
     """
     init_db()
     config = Config(open(get_path_to_config(), "r"))
+    # for attempt in range(1,3):
     try:
-        ctx.exchange = Poloniex(config)
+        ctx.exchange = Poloniex(config, ctx.nonce)
     except Exception as ex:
+        if str(ex).split(" "):
+            if str(ex).split(" ")[0] == 'Nonce':
+                ctx.nonce = int(str(ex).split(" ")[5][:-1]) + 1
         click.echo(ex)
-        sys.exit(1)
+        time.sleep(1)
+        # sys.exit(1)
 
 
 # Добавляем команды
@@ -173,6 +179,10 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
                     db.delete(trade)
             except:
                 pass
+        if bot.spread > 0.5:
+            print("Валюта {} имеет порог покупки {:.2f}%, будет пропущена.".format(bot.market.currency, bot.spread))
+            continue
+
         bot.start(backtest=True, automatic=True)
         try:
             for active in bot.activity:

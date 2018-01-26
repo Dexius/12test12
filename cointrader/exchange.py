@@ -340,8 +340,8 @@ class Exchange(object):
 
 class Poloniex(Exchange):
 
-    def __init__(self, config):
-        api = PoloniexApi(config)
+    def __init__(self, config, nonce):
+        api = PoloniexApi(config, nonce)
         Exchange.__init__(self, config, api)
 
     @property
@@ -370,10 +370,12 @@ class Poloniex(Exchange):
         :param currency:
         :return spread percent:
         """
-        list = self._api.book(currency=currency)
-        last_bid = float(list['bids'][0][0])
-        last_ask = float(list['asks'][0][0])
-        return (last_ask - last_bid) / last_ask * 0.01
+        # list = self._api.book(currency=currency)
+        ticker = self._api.ticker(currency=currency)
+        last_rate = float(ticker["last"])
+        last_bid = float(ticker['highestBid'])
+        last_ask = float(ticker['lowestAsk'])
+        return round(((last_ask - last_bid) / 2) / (last_rate * 0.01), 2)
 
     def get_spread_tick(self, currency):
         """

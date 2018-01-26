@@ -67,9 +67,10 @@ def main(ctx):
 @click.option("--percent", help="Процент торговли от всей суммы.", is_flag=False)
 @click.option("--best", help="", is_flag=False)
 @click.option("--searchpoint", help="", is_flag=False)
+@click.option("--btc", help="trading value of BTC", default=0.0, type=float)
 # @click.option("--best_pass_nth", help="", default="0")
 @pass_context
-def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, searchpoint):
+def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, searchpoint, btc):
     """Start a new bot on the given market and the given amount of BTC"""
 
     # Build the market on which the bot will operate
@@ -93,7 +94,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
     start, end = set_start_end()
 
     best_pair, best_testing_market = find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy,
-                                                    verbose, searchpoint)
+                                                    verbose, searchpoint, btc)
 
     trade_to_minus = False
     # if int(best_pass_nth) == 0:
@@ -104,13 +105,13 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
             print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"]._name, best_pair["profit"]))
             best_pair["market"]._backtrade = False
             bot = get_bot(best_pair["market"], strategy, resolution, start, end, verbose, percent, automatic,
-                          memory_only=False)
+                          memory_only=False, btc=btc)
             trade_to_minus = bot.start(backtest=False, automatic=automatic)
 
     elif best_testing_market[-1]["profit"] > 3 and not best and not is_active(best_testing_market[-1]["market"]):
         best_testing_market[-1]["market"]._backtrade = False
         bot = get_bot(best_testing_market[-1]["market"], strategy, resolution, start, end, verbose, percent, automatic,
-                      memory_only=False)
+                      memory_only=False, btc=btc)
         trade_to_minus = bot.start(backtest=False, automatic=automatic)
 
     if trade_to_minus:
@@ -129,13 +130,13 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
             if trade_to_minus:
                 best_pair, best_testing_market = find_best_pair(automatic, ctx, end, market, percent, resolution, start,
                                                                 strategy,
-                                                                verbose, searchpoint)
+                                                                verbose, searchpoint, btc=btc)
             for item in best_testing_market:
                 item["market"]._backtrade = False
                 if not is_active(item["market"]):
                     print("\nВыбрана пара: %s, заработок: %f" % (item["market"]._name, item["profit"]))
                     bot = get_bot(item["market"], strategy, resolution, start, end, verbose, percent, automatic,
-                                  memory_only=False)
+                                  memory_only=False, btc=btc)
                     to_do = bot.start(backtest=False, automatic=automatic)
 
             trade_to_minus = True
@@ -149,9 +150,9 @@ def is_active(market):
         return True
 
 
-def find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy, verbose, searchpoint):
+def find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy, verbose, searchpoint, btc):
     test_markets = []
-    bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False)
+    bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False, btc=btc)
     df = pd.DataFrame.from_dict(bot._market._exchange.markets, orient='index')
     if len(df):
         while not test_markets:
@@ -175,7 +176,7 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
     for current_market in test_markets:
         if index > 5:
             break
-        bot = create_bot(current_market, strategy, resolution, start, end, verbose, percent, automatic=True)
+        bot = create_bot(current_market, strategy, resolution, start, end, verbose, percent, automatic=True, btc=btc)
         for trade in bot.trades:
             try:
                 if trade != bot.trades[0]:

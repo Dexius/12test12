@@ -6,7 +6,7 @@ from cointrader.exchange import Poloniex
 
 
 class asset_fond():
-    def __init__(self, exchange, order_type="TOTAL", percent=100.0):
+    def __init__(self, exchange, order_type="TOTAL", percent=100.0, btc=0):
 
         # config = cointrader.config.Config(open(cointrader.config.get_path_to_config(), "r"))
         # try:
@@ -19,7 +19,7 @@ class asset_fond():
         percent = self._tofloat(percent)
 
         self.exchange = exchange._exchange
-        self.btc = self.get_btc(percent)
+        self.btc = self.get_btc(percent) if btc == 0 else btc / 100 * percent
         self.currency_pair = exchange._name
         self.amount_btc = self.get_amount_btc(0.0, backtest=True)
         self.percent = percent

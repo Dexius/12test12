@@ -228,7 +228,7 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     test_markets.append(set_market(backtest, ctx, end, market._name, start))
     for current_market in test_markets:
         bot = create_bot(current_market, strategy, resolution, start, end, btc, coins, fixcoin, verbose, percent,
-                         automatic=True)
+                         automatic=True, btc=btc)
         for trade in bot.trades:
             try:
                 if trade != bot.trades[0]:

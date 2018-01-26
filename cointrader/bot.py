@@ -44,7 +44,7 @@ def init_db():
     Base.metadata.create_all(engine)
 
 
-def load_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only):
+def load_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only, btc):
     """Will load an existing bot from the database. While loading the
     bot will replay its trades from the trade log to set the available _btc_deleted
     and coins for further trading.
@@ -69,7 +69,7 @@ def load_bot(market, strategy, resolution, start, end, verbose, percent, automat
             bot._percent_deleted = float(percent)
             bot.detouch = False
             bot.trend = ""
-            bot.fond = asset_fond(market, percent=percent)
+            bot.fond = asset_fond(market, percent=percent, btc=btc)
 
             bot.strategy = str(strategy)
             btc, amount = replay_tradelog(bot.trades, market, bot._market)
@@ -94,9 +94,10 @@ def load_bot(market, strategy, resolution, start, end, verbose, percent, automat
         return None
 
 
-def create_bot(market, strategy, resolution, start, end, verbose, percent, automatic):
+def create_bot(market, strategy, resolution, start, end, verbose, percent, automatic, btc):
     """Will create a new bot instance."""
-    bot = Cointrader(market, strategy, resolution, start, end, automatic, percent)
+    bot = Cointrader(market=market, strategy=strategy, resolution=resolution, start=start, end=end, automatic=automatic,
+                     percent=percent, btc=btc)
     bot.verbose = verbose
     bot.spread = market._exchange.get_spread(bot._market._name)
     bot.spread_tick = market._exchange.get_spread_tick(bot._market._name)
@@ -143,7 +144,7 @@ def get_balance_amount_btc(market):
     return amount, btc
 
 
-def get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only):
+def get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only, btc):
     """Will load or create a bot instance.
     The bot will operate with the given `resolution` on the `market` using
     the specified `strategy`.
@@ -168,9 +169,9 @@ def get_bot(market, strategy, resolution, start, end, verbose, percent, automati
 
     if percent == None:
         percent = 100
-    bot = load_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only)
+    bot = load_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only, btc)
     if bot is None:
-        bot = create_bot(market, strategy, resolution, start, end, verbose, percent, automatic)
+        bot = create_bot(market, strategy, resolution, start, end, verbose, percent, automatic, btc)
 
     return bot
 
@@ -263,7 +264,7 @@ class Cointrader(Base):
     trades = sa.orm.relationship("Trade")
     activity = sa.orm.relationship("Active")
 
-    def __init__(self, market, strategy, resolution="30m", start=None, end=None, automatic=False, percent=100):
+    def __init__(self, market, strategy, resolution="30m", start=None, end=None, automatic=False, percent=100, btc=0):
 
         self.verbose = False
         self.market = market._name
@@ -276,7 +277,7 @@ class Cointrader(Base):
         self._start = start
         self._end = end
 
-        self.fond = asset_fond(market, percent=percent)
+        self.fond = asset_fond(market, percent=percent, btc=btc)
         self.detouch = False
         self.profit = 0
         self.spread = 0.0

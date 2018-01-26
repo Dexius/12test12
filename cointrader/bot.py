@@ -224,6 +224,7 @@ class Trade(Base):
         self.btc = btc
         self.btc_taxed = btc_taxed
         self.minimal_count = 0
+        self.bot_id = sa.Column(sa.Integer, sa.ForeignKey('bots.id'))
         if self.order_type == "BUY":
             print("\n{}: BUY {} @ {} paid -> {} BTC".format(self.date, self.amount, self.rate, self.btc))
             log.info("{}: BUY {} @ {} paid -> {} BTC".format(self.date, self.amount, self.rate, self.btc))

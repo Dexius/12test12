@@ -12,7 +12,7 @@ from terminaltables import AsciiTable
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from cointrader import db, STRATEGIES
 from cointrader.config import Config, get_path_to_config
-from cointrader.exchange import Poloniex, BacktestMarket, Market
+from cointrader.exchange import Poloniex, Market
 from cointrader.exchanges.poloniex import ApiError
 from cointrader.bot import init_db, get_bot, create_bot
 from cointrader.helpers import render_bot_statistic, render_bot_tradelog

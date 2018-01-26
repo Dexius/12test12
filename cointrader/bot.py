@@ -86,6 +86,11 @@ def load_bot(market, strategy, resolution, start, end, verbose, percent, automat
             bot.spread = market._exchange.get_spread(bot._market._name)
             bot.spread_tick = market._exchange.get_spread_tick(bot._market._name)
 
+            active = Active(bot.created, market._name)
+
+            if not market._backtrade:
+                bot.activity.append(active)
+
             db.commit()
             return bot
         else:

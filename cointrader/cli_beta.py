@@ -212,7 +212,7 @@ def best_markets_print(best_testing_market):
                 best_pair = item
             values = []
             values.append(item["market"]._name)
-            values.append(item["profit"])
+            values.append(round(item["profit"], 2))
             out.append(values)
     table = AsciiTable(out).table
     print("\n".join(["\nПрибыльные пары:", table]))

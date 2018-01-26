@@ -267,7 +267,7 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
                 best_pair = item
             values = []
             values.append(item["market"])
-            values.append(item["profit"])
+            values.append(round(item["profit"], 2))
             out.append(values)
 
     table = AsciiTable(out).table

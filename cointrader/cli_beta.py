@@ -26,8 +26,14 @@ class Context(object):
 
     def __init__(self):
         self.exchange = None
-        self.nonce = 1471033830007660
 
+    @property
+    def nonce(self):
+        """
+        Returns a nonce
+        Used in authentication
+        """
+        return int(time.time() * 1000 * 1040) + 1
 
 # Создание пустого декоратора
 pass_context = click.make_pass_decorator(Context, ensure=True)

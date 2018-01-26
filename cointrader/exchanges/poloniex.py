@@ -307,7 +307,7 @@ class Poloniex(Api):
         given the balance of all currency are returned.
         """
         result = {}
-        params = {"command": "returnCompleteBalances", "nonce": int(round(self.nonce + time.time()*1000))}
+        params = {"command": "returnCompleteBalances", "nonce": self.nonce}
         sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
         headers = {"Key": self.key, "Sign": sign}
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
@@ -327,7 +327,7 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": int(round(self.nonce + time.time() * 1000))}
+                  "nonce": self.nonce}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1
@@ -346,11 +346,12 @@ class Poloniex(Api):
 
     @retry(Exception, tries=4)
     def sell(self, market, amount, price, option=None):
+
         params = {"command": "sell",
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": int(round(self.nonce + time.time()*1000))}
+                  "nonce": self.nonce}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1

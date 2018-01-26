@@ -143,7 +143,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
 
 
 def is_active(market):
-    activities = db.query(Active).filter(Active.currency == market._name)
+    activities = db.query(Active).filter(Active.currency == market._name).first()
     if activities == None:
         return False
     else:
@@ -200,6 +200,8 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
             pass
         if bot.profit > 3 and bot.trend != 'Рынок ВВЕРХ':
             best_testing_market.append({"market": bot._market, "profit": bot.profit})
+            if not is_active(bot._market):
+                break
             index += 1
     from operator import itemgetter
     best_testing_market = sorted(best_testing_market, key=itemgetter('profit'), reverse=True)

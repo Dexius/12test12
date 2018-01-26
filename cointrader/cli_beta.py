@@ -184,7 +184,7 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
             except:
                 pass
         if bot.spread > 0.5:
-            print("Валюта {} имеет порог покупки {:.2f}%, будет пропущена.".format(bot.market.currency, bot.spread))
+            print("Валюта {} имеет порог покупки {:.2f}%, будет пропущена.".format(bot._market.currency, bot.spread))
             continue
 
         bot.start(backtest=True, automatic=True)

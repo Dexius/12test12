@@ -179,6 +179,7 @@ class Poloniex(Api):
         if "error" in json:
             raise ApiError(json["error"])
 
+    @retry(Exception, tries=4)
     def ticker(self, currency=None):
         """
         Returns the ticker of the given currency pair. If no pair is given
@@ -205,6 +206,7 @@ class Poloniex(Api):
             return result[currency]
         return result
 
+    @retry(Exception, tries=4)
     def volume(self, currency=None):
         """
         Returns the volume of the given currency. If not currency is given
@@ -256,6 +258,7 @@ class Poloniex(Api):
         result = json.loads(r.content.decode())
         return result
 
+    @retry(Exception, tries=4)
     def chart(self, currency, start, end, period=1800):
         """
         Returns candlestick chart data. Required GET parameters are
@@ -297,6 +300,7 @@ class Poloniex(Api):
         self._check_response(result)
         return result
 
+    @retry(Exception, tries=4)
     def balance(self):
         """
         Returns the balance of the given currency. If not currency is
@@ -316,6 +320,7 @@ class Poloniex(Api):
             result[currency]["btc_value"] = float(tmp[currency]["btcValue"])
         return result
 
+    @retry(Exception, tries=4)
     def buy(self, market, amount, price, option):
 
         params = {"command": "buy",
@@ -339,6 +344,7 @@ class Poloniex(Api):
         self._check_response(result)
         return result
 
+    @retry(Exception, tries=4)
     def sell(self, market, amount, price, option=None):
         params = {"command": "sell",
                   "currencyPair": market,

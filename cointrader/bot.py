@@ -68,6 +68,7 @@ def load_bot(market, strategy, resolution, start, end, verbose, percent, automat
             bot._min_count_currency_deleted = 0.0
             bot._percent_deleted = float(percent)
             bot.detouch = False
+            bot.trend = ""
             bot.fond = asset_fond(market, percent=percent)
 
             bot.strategy = str(strategy)
@@ -111,6 +112,7 @@ def create_bot(market, strategy, resolution, start, end, verbose, percent, autom
     # bot._min_count_btc_deleted = 0.0
     # bot._min_count_currency_deleted = 0.0
     bot.detouch = False
+    bot.trend = ""
 
     chart = market.get_chart(resolution, start, end)
     rate = chart.get_first_point()["close"]
@@ -230,6 +232,7 @@ class Trade(Base):
             print("\n{}: INIT {} BTC {} COINS".format(self.date, self.btc, self.amount))
             log.info("{}: INIT {} BTC {} COINS".format(self.date, self.btc, self.amount))
 
+
 class Active(Base):
     """All avtive boot of cointrader are saved in the database. A active can either be or not."""
     __tablename__ = "active"
@@ -238,14 +241,14 @@ class Active(Base):
     date = sa.Column(sa.DateTime, nullable=False, default=datetime.datetime.utcnow)
     currency = sa.Column(sa.String, nullable=False)
 
-
     def __init__(self, date, currency):
 
-            if not isinstance(date, datetime.datetime):
-                self.date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
-            else:
-                self.date = date
-            self.currency = currency
+        if not isinstance(date, datetime.datetime):
+            self.date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+        else:
+            self.date = date
+        self.currency = currency
+        self.bot_id = sa.Column(sa.Integer, sa.ForeignKey('bots.id'))
 
 
 class Cointrader(Base):
@@ -357,6 +360,7 @@ class Cointrader(Base):
         # else:
         #     _amount_deleted = self.test_min_value_btc(self._amount_deleted)
 
+        global btc
         if amount_btc == 0:
             amount_btc = self.fond.get_amount_btc(self.fond.amount_btc)
             renew = True
@@ -411,17 +415,6 @@ class Cointrader(Base):
 
         return 987987898797879787978797897879787978
 
-    def test_min_value_btc(self, btc):
-        if not (self._min_count_btc_deleted == 0.0 and self._min_count_btc_deleted < btc) and self.verbose:
-            print("Установлен минимальное доступное количество %f" % self._min_count_btc_deleted)
-            btc = self._min_count_btc_deleted
-        return btc
-
-    def test_min_value_amount(self, amount):
-        if not (self._min_count_currency_deleted == 0 and self._min_count_currency_deleted < amount) and self.verbose:
-            print("Установлен минимальное доступное количество %f" % self._min_count_currency_deleted)
-            amount = self._min_count_btc_deleted
-        return amount
 
     def stat(self, delete_trades=False):
         """Returns a dictionary with some statistic of the performance
@@ -675,6 +668,7 @@ class Cointrader(Base):
 
         interval = self._get_interval(automatic, backtest)
         chart_last = None
+        count = 0
         while 1:
 
             if chart_last == None and not backtest and automatic:
@@ -689,8 +683,30 @@ class Cointrader(Base):
 
             if backtest:
                 chart = self._market.get_chart(self._resolution, self._start, self._end)
+
+                if count == 0:
+                    self._strategy.trend = []
+                    for index in range(-5, -1):
+                        chart_all_period = self._market.get_chart(self._resolution, self._start, self._end,
+                                                                  last_numbers=index)
+                        signal = self._strategy.signal(chart_all_period, self.verbose, self.get_stop_limit(), backtest,
+                                                       index)
+                        print()
+                    trends = self._strategy.trend
+                    if len(trends) > 3:
+                        if trends[-1] == trends[-2] == trends[-3] == "Рынок ВВЕРХ":
+                            self.trend = trends[-1]
+                            print("\nПара не по времени.")
+                            self._strategy.trend = []
+                            self.detouch = True
+                            return self.detouch
+                        elif trends[-1] == trends[-2] == trends[-3] == "Рынок  ВНИЗ":
+                            self.trend = trends[-1]
+
+
             else:
                 chart = self._market.get_chart(self._resolution, None, None)
+
             signal = self._strategy.signal(chart, self.verbose, self.get_stop_limit(), backtest,
                                            self._market._backtest_tick)
             closing = chart.values()
@@ -766,8 +782,8 @@ class Cointrader(Base):
 
             if signal:
                 try:
-                #     if not self.active_trade_signal:
-                #         self.active_trade_signal.append(signal.value)
+                    #     if not self.active_trade_signal:
+                    #         self.active_trade_signal.append(signal.value)
 
                     if signal.value != WAIT or first_sell:
 
@@ -883,6 +899,11 @@ class Cointrader(Base):
                             pass
 
                         show(p)
+                    trends = self._strategy.trend
+                    if len(trends) > 3:
+                        if trends[-1] == trends[-2] == trends[-3] == "Рынок ВВЕРХ":
+                            self.trend = trends[-1]
+                            print("\nПара не по времени.")
 
                     if self.verbose:
                         print("\nТестирование завершено")
@@ -900,6 +921,8 @@ class Cointrader(Base):
                     break
             else:
                 time.sleep(interval)
+            count += 1
+            print()
 
         return self.detouch
 

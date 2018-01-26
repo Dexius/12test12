@@ -171,9 +171,9 @@ class Poloniex(Api):
     # trading activity within an exchange by extending to firms the
     # incentive to post orders, in theory facilitating trading.
 
-    def __init__(self, config):
+    def __init__(self, config, nonce):
         super().__init__(config)
-        self.nonce = 1468000000000000
+        self.nonce = nonce
 
     def _check_response(self, json):
         if "error" in json:

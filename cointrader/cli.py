@@ -215,8 +215,14 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     amount_before = bot.fond.amount_btc
     end, start = set_start_end(end, 1, start)
 
-    db.delete(bot)
-    db.commit()
+    try:
+        for active in bot.activity:
+            db.delete(active)
+
+        db.delete(bot)
+        db.commit()
+    finally:
+        pass
 
     best_testing_market = []
     test_markets.append(set_market(backtest, ctx, end, market._name, start))
@@ -281,8 +287,14 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     if backtest:
         click.echo(render_bot_tradelog(bot.trades))
         click.echo(render_bot_statistic(bot, bot.stat(True)))
-        db.delete(bot)
-        db.commit()
+        try:
+            for active in bot.activity:
+                db.delete(active)
+
+            db.delete(bot)
+            db.commit()
+        finally:
+            pass
 
 
 def set_market(backtest, ctx, end, market, start):

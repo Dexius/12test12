@@ -63,8 +63,9 @@ class Followtrend(Strategy):
         self._macd = WAIT
         self.verbose = False
         self.EMA = []
+        self.trend = []
 
-    def signal(self, chart, verbose=False, first_buy_price=777777777777777777777777777, backtest=False, backtest_tick=0):
+    def signal(self, chart, verbose=False, first_buy_price=1000000, backtest=False, backtest_tick=0):
 
         global SELL_ZONE
         self.verbose = verbose
@@ -84,7 +85,7 @@ class Followtrend(Strategy):
         if macdh_signal.value == SELL:
             self._macd = SELL
         log.debug("macdh signal: {}".format(self._macd))
-        print("\nP: {:.5e} MACD: {:+.0f}".format(self._value, self._macd), end=" ")
+        print("P: {:.5e} MACD: {:+.0f}".format(self._value, self._macd), end=" ", flush=True)
 
         # Finally we are using the double_cross signal as confirmation
         # of the former MACDH signal
@@ -93,9 +94,9 @@ class Followtrend(Strategy):
         list = chart.rsi()
         list_wr = chart.wr()
         list_dmi = chart.dmi()
-        print(" ADX: {:+.2f}".format(list_dmi[-1]), end=" ")
+        print(" ADX: {:+.2f}".format(list_dmi[-1]), end=" ", flush=True)
         good_to_sell = (list_wr[-1] > 63 and first_buy_price < self._value)
-        good_to_buy = list[-1] < 63 and list_dmi[-1] > 33
+        good_to_buy = list[-1] < 63 and list_dmi[-1] > 20
 
 
         # if self._macd == BUY and dc_signal.value == BUY:
@@ -124,9 +125,9 @@ class Followtrend(Strategy):
         if list[-1] > 70:
             signal.over_sell = True
             SELL_ZONE += 1
-            print(" SELL_ZONE: {:.2f}".format(SELL_ZONE, self._value), end=" ")
+            print(" SELL_ZONE: {:.2f}".format(SELL_ZONE, self._value), end=" ", flush=True)
         else:
-            print(" BUY_ZONE: {:.2f} ".format(list[-1]), end=" ")
+            print(" BUY_ZONE: {:.2f} ".format(list[-1]), end=" ", flush=True)
         #
         if signal.value == SELL:
             SELL_ZONE = 0
@@ -163,7 +164,7 @@ class Followtrend(Strategy):
                         report = report.join("Пробитие локального МИНИМУМА")
 
         if report:
-            print(report, end=" ")
+            print(report, end=" ", flush=True)
 
 
         return signal

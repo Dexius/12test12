@@ -165,7 +165,8 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
     try:
         for active in bot.activity:
             db.delete(active)
-
+        for current_trade in bot.trades:
+            db.delete(current_trade)
         db.delete(bot)
         db.commit()
     finally:
@@ -191,7 +192,8 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
         try:
             for active in bot.activity:
                 db.delete(active)
-
+            for current_trade in bot.trades:
+                db.delete(current_trade)
             db.delete(bot)
             db.commit()
         finally:

@@ -218,7 +218,8 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     try:
         for active in bot.activity:
             db.delete(active)
-
+        for current_trade in bot.trades:
+            db.delete(current_trade)
         db.delete(bot)
         db.commit()
     finally:
@@ -237,10 +238,13 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
                 pass
         bot.start(backtest=True, automatic=True)
         try:
+            for active in bot.activity:
+                db.delete(active)
+            for current_trade in bot.trades:
+                db.delete(current_trade)
             db.delete(bot)
             db.commit()
-
-        except:
+        finally:
             pass
         best_testing_market.append({"market": current_market._name, "profit": bot.profit})
 
@@ -290,7 +294,8 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
         try:
             for active in bot.activity:
                 db.delete(active)
-
+            for current_trade in bot.trades:
+                db.delete(current_trade)
             db.delete(bot)
             db.commit()
         finally:

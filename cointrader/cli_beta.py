@@ -78,7 +78,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
     # here with a error message.
     # If the market is valid create a real market instance of and
     # instance for backtests depending on the user input.
-    market = set_market(ctx, market, backtrade=False)
+    market = set_market(ctx, market, backtrade=True)
 
     # Check if the given resolution is supported
     if not ctx.exchange.is_valid_resolution(resolution):

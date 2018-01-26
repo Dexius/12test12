@@ -123,7 +123,8 @@ def create_bot(market, strategy, resolution, start, end, verbose, percent, autom
     active = Active(date, market._name)
 
     bot.trades.append(trade)
-    bot.activity.append(active)
+    if not market._backtrade:
+        bot.activity.append(active)
 
     # # Добавляем список активных торгов
     # bot.active_trade_signal = []
@@ -625,6 +626,7 @@ class Cointrader(Base):
                     click.echo(render_bot_statistic(self, self.stat()))
 
                 elif first_sell:
+                    order_type = "SELL"
                     total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest) * 0.05
                     if self.fond.sell_percent > 85:
                         renew = True
@@ -633,7 +635,7 @@ class Cointrader(Base):
                         renew = False
                     total_btc = total_amount * _value
 
-                    trade = Trade(_date, SELL, '22222222', '222222222', self._market._name, _value,
+                    trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
 
                     # Finally set the internal state of the bot. Amount will be 0 after

@@ -107,12 +107,15 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
             bot = get_bot(best_pair["market"], strategy, resolution, start, end, verbose, percent, automatic,
                           memory_only=False, btc=btc)
             trade_to_minus = bot.start(backtest=False, automatic=automatic)
+            delete_bot(bot)
+
 
     elif best_testing_market[-1]["profit"] > 3 and not best and not is_active(best_testing_market[-1]["market"]):
         best_testing_market[-1]["market"]._backtrade = False
         bot = get_bot(best_testing_market[-1]["market"], strategy, resolution, start, end, verbose, percent, automatic,
                       memory_only=False, btc=btc)
         trade_to_minus = bot.start(backtest=False, automatic=automatic)
+        delete_bot(bot)
 
     if trade_to_minus:
         print("На данной паре заработок отсутсвует.")
@@ -138,8 +141,21 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
                     bot = get_bot(item["market"], strategy, resolution, start, end, verbose, percent, automatic,
                                   memory_only=False, btc=btc)
                     to_do = bot.start(backtest=False, automatic=automatic)
+                    delete_bot(bot)
 
             trade_to_minus = True
+
+
+def delete_bot(bot):
+    try:
+        for active in bot.activity:
+            db.delete(active)
+        for current_trade in bot.trades:
+            db.delete(current_trade)
+        db.delete(bot)
+        db.commit()
+    finally:
+        pass
 
 
 def is_active(market):
@@ -162,15 +178,7 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
                 time.sleep(1)
                 print("Ищу пары по условию: (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 3)")
 
-    try:
-        for active in bot.activity:
-            db.delete(active)
-        for current_trade in bot.trades:
-            db.delete(current_trade)
-        db.delete(bot)
-        db.commit()
-    finally:
-        pass
+    delete_bot(bot)
     best_testing_market = []
     test_markets.append(set_market(ctx, market._name, backtrade=True))
     index = 0
@@ -189,15 +197,7 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
             continue
 
         bot.start(backtest=True, automatic=True)
-        try:
-            for active in bot.activity:
-                db.delete(active)
-            for current_trade in bot.trades:
-                db.delete(current_trade)
-            db.delete(bot)
-            db.commit()
-        finally:
-            pass
+        delete_bot(bot)
         if bot.profit > 3 and bot.trend != 'Рынок ВВЕРХ':
             best_testing_market.append({"market": bot._market, "profit": bot.profit})
             if not is_active(bot._market):

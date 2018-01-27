@@ -14,7 +14,7 @@ from cointrader import db, STRATEGIES
 from cointrader.config import Config, get_path_to_config
 from cointrader.exchange import Poloniex, Market
 from cointrader.exchanges.poloniex import ApiError
-from cointrader.bot import init_db, get_bot, create_bot
+from cointrader.bot import init_db, get_bot, create_bot, Active
 from cointrader.helpers import render_bot_statistic, render_bot_tradelog
 
 # Создание лога
@@ -202,7 +202,6 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
         values.append(str(change) + "%")
         out.append(values)
         end, start = set_start_end(end, 1, start)
-
         if current_market != market._name:
             test_markets.append(set_market(True, ctx, end, current_market, start))
 
@@ -304,13 +303,13 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
 
 def set_market(backtest, ctx, end, market, start):
     if ctx.exchange.is_valid_market(market):
-        if backtest:
-            if start is None or end is None:
-                click.echo("Error! For backtests you must provide a timeframe by setting start and end!")
-                sys.exit(1)
-            market = BacktestMarket(ctx.exchange, market)
-        else:
-            market = Market(ctx.exchange, market)
+        # if not backtest:
+        #     if start is None or end is None:
+        #         click.echo("Error! For backtests you must provide a timeframe by setting start and end!")
+        #         sys.exit(1)
+        #     market = BacktestMarket(ctx.exchange, market)
+        # else:
+        market = Market(ctx.exchange, market)
     else:
 
         click.echo("Market {} is not available".format(market))

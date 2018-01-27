@@ -8,13 +8,6 @@ from cointrader.exchange import Poloniex
 class asset_fond():
     def __init__(self, exchange, order_type="TOTAL", percent=100.0, btc=0):
 
-        # config = cointrader.config.Config(open(cointrader.config.get_path_to_config(), "r"))
-        # try:
-        #     self.exchange = Poloniex(config)
-        # except Exception as ex:
-        #     print(ex)
-        #     sys.exit(1)
-
         self.order_type = order_type
         percent = self._tofloat(percent)
 
@@ -37,11 +30,17 @@ class asset_fond():
             while amount_to_sell_in_btc <= .00015:
                 amount_to_sell_in_btc = amount_to_sell_in_btc * value
                 value += 0.01
-            return amount_to_sell_in_btc / rate
-        else:
-            if self.amount_btc - amount_to_sell * rate <= .00015:
-                amount_to_sell = self.amount_btc
+            amount_to_sell = amount_to_sell_in_btc / rate
+            amount_to_sell = self.get_part_or_all(amount_to_sell, rate)
             return amount_to_sell
+        else:
+            amount_to_sell = self.get_part_or_all(amount_to_sell, rate)
+            return amount_to_sell
+
+    def get_part_or_all(self, amount_to_sell, rate):
+        if self.amount_btc - amount_to_sell * rate <= .00015:
+            amount_to_sell = self.amount_btc
+        return amount_to_sell
 
     def add_row(self, btc, amount_btc, order_type, first_sell=False, renew=False, backtest=False):
         if not self.rows:

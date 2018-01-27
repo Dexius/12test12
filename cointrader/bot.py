@@ -53,46 +53,48 @@ def load_bot(market, strategy, resolution, start, end, verbose, percent, automat
     like the time frame and strategy are defined by the user. They are
     not loaded from the database."""
     try:
-        bot = db.query(Cointrader).filter(Cointrader.market == market._name).first()
-        if bot != None:
-            bot.verbose = verbose
-            if bot.verbose:
-                print("Загружаем бота {} {}".format(bot.market, bot.id))
-            log.info("Загружаем бота {} {}".format(bot.market, bot.id))
-            bot._market = market
-            bot._strategy = strategy
-            bot._resolution = resolution
-            bot._start = start
-            bot._end = end
-            bot._min_count_btc_deleted = 0.0
-            bot._min_count_currency_deleted = 0.0
-            bot._percent_deleted = float(percent)
-            bot.detouch = False
-            bot.trend = ""
-            bot.fond = asset_fond(market, percent=percent, btc=btc)
+        active_currency = db.query(Active).filter(Active.currency == market._name).first()
+        if not active_currency:
+            bot = db.query(Cointrader).filter(Cointrader.market == market._name).first()
+            if bot != None:
+                bot.verbose = verbose
+                if bot.verbose:
+                    print("Загружаем бота {} {}".format(bot.market, bot.id))
+                log.info("Загружаем бота {} {}".format(bot.market, bot.id))
+                bot._market = market
+                bot._strategy = strategy
+                bot._resolution = resolution
+                bot._start = start
+                bot._end = end
+                bot._min_count_btc_deleted = 0.0
+                bot._min_count_currency_deleted = 0.0
+                bot._percent_deleted = float(percent)
+                bot.detouch = False
+                bot.trend = ""
+                bot.fond = asset_fond(market, percent=percent, btc=btc)
 
-            bot.strategy = str(strategy)
-            btc, amount = replay_tradelog(bot.trades, market, bot._market)
-            if bot.verbose:
-                print("Восстановлен из журнала обмена: {} биткоинов {} монет".format(btc, amount))
-            log.info("Восстановлен из журнала обмена: {} биткоинов {} монет".format(btc, amount))
-            # bot._btc_deleted = btc
-            # bot._amount_deleted = amount
-            bot.profit = 0
+                bot.strategy = str(strategy)
+                btc, amount = replay_tradelog(bot.trades, market, bot._market)
+                if bot.verbose:
+                    print("Восстановлен из журнала обмена: {} биткоинов {} монет".format(btc, amount))
+                log.info("Восстановлен из журнала обмена: {} биткоинов {} монет".format(btc, amount))
+                # bot._btc_deleted = btc
+                # bot._amount_deleted = amount
+                bot.profit = 0
 
-            # # Добавляем список активных торгов
-            # bot.active_trade_signal = []
+                # # Добавляем список активных торгов
+                # bot.active_trade_signal = []
 
-            bot.spread = market._exchange.get_spread(bot._market._name)
-            bot.spread_tick = market._exchange.get_spread_tick(bot._market._name)
+                bot.spread = market._exchange.get_spread(bot._market._name)
+                bot.spread_tick = market._exchange.get_spread_tick(bot._market._name)
 
-            active = Active(bot.created, market._name)
+                active = Active(bot.created, market._name)
 
-            if not market._backtrade:
-                bot.activity.append(active)
+                if not market._backtrade:
+                    bot.activity.append(active)
 
-            db.commit()
-            return bot
+                db.commit()
+                return bot
         else:
             return None
     except sa.orm.exc.NoResultFound:

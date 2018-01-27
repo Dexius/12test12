@@ -33,7 +33,7 @@ class Context(object):
         Returns a nonce
         Used in authentication
         """
-        return int(time.time() * 1000 * 1040) + 1
+        return int((time.time() + 1.5) * 1000 * 1040)
 
 # Создание пустого декоратора
 pass_context = click.make_pass_decorator(Context, ensure=True)

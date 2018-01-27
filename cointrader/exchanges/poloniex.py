@@ -150,8 +150,7 @@ def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
                     if logger:
                         logger.warning(msg)
                     else:
-                        print
-                        msg
+                        print(msg)
                     time.sleep(mdelay)
                     mtries -= 1
                     mdelay *= backoff
@@ -307,7 +306,9 @@ class Poloniex(Api):
         given the balance of all currency are returned.
         """
         result = {}
-        params = {"command": "returnCompleteBalances", "nonce": self.nonce}
+        params = {"command": "returnCompleteBalances",
+                  "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
+                      (time.time() + 0.5) * 1000 * 1050)}
         sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
         headers = {"Key": self.key, "Sign": sign}
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
@@ -327,8 +328,8 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": self.nonce if self.nonce >= int((time.time() + 1.5) * 1000 * 1040) else int(
-                      (time.time() + 1.5) * 1000 * 1040)}
+                  "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
+                      (time.time() + 0.5) * 1000 * 1050)}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1
@@ -352,8 +353,8 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": self.nonce if self.nonce >= int((time.time() + 1.5) * 1000 * 1040) else int(
-                      (time.time() + 1.5) * 1000 * 1040)}
+                  "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
+                      (time.time() + 0.5) * 1000 * 1050)}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1

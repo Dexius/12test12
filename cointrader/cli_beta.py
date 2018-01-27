@@ -33,7 +33,7 @@ class Context(object):
         Returns a nonce
         Used in authentication
         """
-        return int((time.time() + 1.5) * 1000 * 1040)
+        return int((time.time() + 0.5) * 1000 * 1050)
 
 # Создание пустого декоратора
 pass_context = click.make_pass_decorator(Context, ensure=True)
@@ -62,6 +62,20 @@ def main(ctx):
             time.sleep(1)
             # sys.exit(1)
 
+    # to_do = True
+    # n = 0
+    # while to_do:
+    #     a = int(time.time())
+    #     b = int(time.time() + .5)
+    #     if a == b:
+    #         print(int(time.time()))
+    #     else:
+    #         print("{} не равно {} на {} секунде".format(a, b, n))
+    #         to_do = False
+    #     n += 1
+    #     time.sleep(1)
+    #
+    # a = 1
 
 # Добавляем команды
 @click.command()
@@ -106,7 +120,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
     # if int(best_pass_nth) == 0:
     if not best_testing_market:
         trade_to_minus = True
-    elif best_pair != None:
+    elif best_pair is not None:
         if best and not is_active(best_pair["market"]):
             print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"]._name, best_pair["profit"]))
             best_pair["market"]._backtrade = False
@@ -166,7 +180,7 @@ def delete_bot(bot):
 
 def is_active(market):
     activities = db.query(Active).filter(Active.currency == market._name).first()
-    if activities == None:
+    if activities is None:
         return False
     else:
         return True

@@ -54,7 +54,7 @@ class Market(object):
     @property
     def currency(self):
         pair = self._name.split("_")
-        return pair[1]\
+        return pair[1]
 
     @property
     def url(self):

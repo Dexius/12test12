@@ -22,6 +22,9 @@ from cointrader.helpers import (
 # to reattach the bot
 log = logging.getLogger(__name__)
 
+MAKER_FEE = .0025
+TAKER_FEE = MAKER_FEE
+
 
 def replay_tradelog(trades, market, _market):
     btc = 0
@@ -600,7 +603,7 @@ class Cointrader(Base):
                 if signal.buy and not first_sell and not self.fond.rows:
                     order_type = "BUY"
                     spread = self._market._exchange.get_spread(self.market) * .01
-                    market_tax = self.fond.btc * (spread + self._market.MAKER_FEE)
+                    market_tax = self.fond.btc * (spread + MAKER_FEE)
                     total_amount = (self.fond.btc - market_tax) / _value
                     trade = Trade(_date, order_type, '11111111', '111111111', self._market._name, _value, btc_taxed=0,
                                   btc=self.fond.btc, amount_taxed=0, amount=total_amount)
@@ -621,7 +624,7 @@ class Cointrader(Base):
                     total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest)
                     spread = self._market._exchange.get_spread(self.market) * .01
                     total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread) \
-                                - (total_amount * _value * self._market.TAKER_FEE)
+                                - (total_amount * _value * TAKER_FEE)
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
 
@@ -649,7 +652,7 @@ class Cointrader(Base):
 
                     spread = self._market._exchange.get_spread(self.market) * .01
                     total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread) \
-                                - (total_amount * _value * self._market.TAKER_FEE)
+                                - (total_amount * _value * TAKER_FEE)
 
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
@@ -731,8 +734,8 @@ class Cointrader(Base):
             closing = chart.values()
             _value = closing[-1][1]
 
-            if signal == QUIT and 0 >= len(self.trades) <= 1:
-                print("Параметры покупки не удовлетворительны.")
+            if signal.value == QUIT and (0 < len(self.trades) <= 1):
+                print("\nПараметры покупки не удовлетворительны. Отключаю бота.")
                 self.detouch = True
                 break
 
@@ -809,7 +812,7 @@ class Cointrader(Base):
                     #     if not self.active_trade_signal:
                     #         self.active_trade_signal.append(signal.value)
 
-                    if signal.value != WAIT or first_sell:
+                    if signal.value not in (WAIT, QUIT) or first_sell:
 
                         result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
                                                      first_sell=first_sell)

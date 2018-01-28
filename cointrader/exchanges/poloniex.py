@@ -117,7 +117,7 @@ class Api(object):
         raise NotImplementedError()
 
 
-def retry(ExceptionToCheck, tries=4, delay=1, backoff=2, logger=None):
+def retry(ExceptionToCheck, tries=10, delay=1, backoff=2, logger=None):
     """Retry calling the decorated function using an exponential backoff.
 
     http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/

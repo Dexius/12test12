@@ -162,7 +162,7 @@ def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
 
 
 class Poloniex(Api):
-    MAKER_FEE = 0.0015
+    MAKER_FEE = 0.0025
     TAKER_FEE = 0.0025
     # So-called maker-taker fees offer a transaction rebate to those who
     # provide liquidity (the market maker), while charging customers who

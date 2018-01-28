@@ -4,7 +4,7 @@ import logging
 import string
 
 from cointrader.indicators import (
-    SELL_ZONE, WAIT, BUY, SELL, Signal, macdh_momententum, macdh, double_cross
+    SELL_ZONE, WAIT, BUY, SELL, QUIT, Signal, macdh_momententum, macdh, double_cross
 )
 
 log = logging.getLogger(__name__)
@@ -111,9 +111,10 @@ class Followtrend(Strategy):
             # print("Уровень 2: {}".format(list_wr[-1]))
             # if list_wr[-1] > 70:
             #     print("Уровень 2: {}".format(list_wr[-1]))
+        elif (self._macd == BUY and dc_signal.value == BUY and not good_to_buy):
+            signal = Signal(QUIT, dc_signal.date)
         elif good_to_sell:
             signal = Signal(SELL, dc_signal.date)
-
         else:
             signal = Signal(WAIT, dc_signal.date)
 

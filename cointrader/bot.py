@@ -10,7 +10,7 @@ import pandas as pd
 from cointrader import Base, engine, db
 from cointrader.asset_fond import asset_fond
 from cointrader.indicators import (
-    WAIT, BUY, SELL, Signal, signal_map
+    WAIT, BUY, SELL, QUIT, Signal, signal_map
 )
 from cointrader.helpers import (
     render_bot_statistic, render_bot_tradelog,
@@ -600,7 +600,7 @@ class Cointrader(Base):
                 if signal.buy and not first_sell and not self.fond.rows:
                     order_type = "BUY"
                     spread = self._market._exchange.get_spread(self.market) * .01
-                    market_tax = self.fond.btc * spread
+                    market_tax = self.fond.btc * (spread + self._market._exchange.MAKER_FEE)
                     total_amount = (self.fond.btc - market_tax) / _value
                     trade = Trade(_date, order_type, '11111111', '111111111', self._market._name, _value, btc_taxed=0,
                                   btc=self.fond.btc, amount_taxed=0, amount=total_amount)
@@ -620,7 +620,8 @@ class Cointrader(Base):
                     order_type = "SELL"
                     total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest)
                     spread = self._market._exchange.get_spread(self.market) * .01
-                    total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread)
+                    total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread) \
+                                - (total_amount * _value * self._market._exchange.TAKER_FEE)
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
 
@@ -647,7 +648,8 @@ class Cointrader(Base):
                         renew = False
 
                     spread = self._market._exchange.get_spread(self.market) * .01
-                    total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread)
+                    total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread) \
+                                - (total_amount * _value * self._market._exchange.TAKER_FEE)
 
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
@@ -728,6 +730,11 @@ class Cointrader(Base):
                                            self._market._backtest_tick)
             closing = chart.values()
             _value = closing[-1][1]
+
+            if signal == QUIT and 0 >= len(self.trades) <= 1:
+                print("Параметры покупки не удовлетворительны.")
+                self.detouch = True
+                break
 
             first_sell = self.fond.amount_btc > 0 and (self.first_sell(_value) or signal.over_sell)
             if signal.value == BUY:

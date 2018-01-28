@@ -62,21 +62,6 @@ def main(ctx):
             time.sleep(1)
             # sys.exit(1)
 
-    # to_do = True
-    # n = 0
-    # while to_do:
-    #     a = int(time.time())
-    #     b = int(time.time() + .5)
-    #     if a == b:
-    #         print(int(time.time()))
-    #     else:
-    #         print("{} не равно {} на {} секунде".format(a, b, n))
-    #         to_do = False
-    #     n += 1
-    #     time.sleep(1)
-    #
-    # a = 1
-
 # Добавляем команды
 @click.command()
 @click.argument("market")

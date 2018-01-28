@@ -17,7 +17,7 @@ requirements = [
     'stockstats',
     'termcolor',
     'terminaltables',
-    'pandas'
+    'pandas', 'cx_Freeze'
     # TODO: put package requirements here
 ]
 

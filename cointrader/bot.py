@@ -600,7 +600,7 @@ class Cointrader(Base):
                 if signal.buy and not first_sell and not self.fond.rows:
                     order_type = "BUY"
                     spread = self._market._exchange.get_spread(self.market) * .01
-                    market_tax = self.fond.btc * (spread + self._market._exchange.MAKER_FEE)
+                    market_tax = self.fond.btc * (spread + self._market.MAKER_FEE)
                     total_amount = (self.fond.btc - market_tax) / _value
                     trade = Trade(_date, order_type, '11111111', '111111111', self._market._name, _value, btc_taxed=0,
                                   btc=self.fond.btc, amount_taxed=0, amount=total_amount)
@@ -621,7 +621,7 @@ class Cointrader(Base):
                     total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest)
                     spread = self._market._exchange.get_spread(self.market) * .01
                     total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread) \
-                                - (total_amount * _value * self._market._exchange.TAKER_FEE)
+                                - (total_amount * _value * self._market.TAKER_FEE)
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
 
@@ -649,7 +649,7 @@ class Cointrader(Base):
 
                     spread = self._market._exchange.get_spread(self.market) * .01
                     total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread) \
-                                - (total_amount * _value * self._market._exchange.TAKER_FEE)
+                                - (total_amount * _value * self._market.TAKER_FEE)
 
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)

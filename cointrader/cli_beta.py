@@ -48,20 +48,8 @@ def main(ctx):
     """
     init_db()
     config = Config(open(get_path_to_config(), "r"))
-    # for attempt in range(1,3):
-    # to_do = True
-    # while to_do:
-    #     try:
     ctx.exchange = Poloniex(config, ctx.nonce)
-    # to_do = False
-    # except Exception as ex:
-    #
-    #     if str(ex).split(" "):
-    #         if str(ex).split(" ")[0] == 'Nonce':
-    #             ctx.nonce = int(str(ex).split(" ")[5][:-1]) + 1
-    #     click.echo(ex)
-    #     time.sleep(1)
-            # sys.exit(1)
+
 
 # Добавляем команды
 @click.command()

@@ -158,7 +158,7 @@ def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
                         if type(args[0]).__name__ == 'Poloniex':
                             if str(e).split(" "):
                                 if str(e).split(" ")[0] == 'Nonce':
-                                    args[0].nonce = int(str(e).split(" ")[5][:-1]) + 1
+                                    args[0].nonce = int(str(e).split(" ")[5][:-1]) + 2
 
             return f(*args, **kwargs)
 

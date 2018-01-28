@@ -52,10 +52,6 @@ class Market(object):
         self._backtrade = backTrade
 
     @property
-    def spread(self):
-        return self._market._exchange.get_spread(self.market)
-
-    @property
     def currency(self):
         pair = self._name.split("_")
         return pair[1]\

@@ -599,7 +599,7 @@ class Cointrader(Base):
 
                 if signal.buy and not first_sell and not self.fond.rows:
                     order_type = "BUY"
-                    market_tax = self.fond.btc * self.spread
+                    market_tax = self.fond.btc * self.market.spread
                     total_amount = self.fond.btc - market_tax / _value
                     trade = Trade(_date, order_type, '11111111', '111111111', self._market._name, _value, btc_taxed=0,
                                   btc=self.fond.btc, amount_taxed=0, amount=total_amount)
@@ -617,9 +617,8 @@ class Cointrader(Base):
 
                 elif signal.sell and not first_sell:
                     order_type = "SELL"
-                    market_tax = self.fond.btc * self.spread
                     total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest)
-                    total_btc = self.fond.btc + total_amount * _value - market_tax
+                    total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * self.market.spread)
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
 
@@ -637,14 +636,14 @@ class Cointrader(Base):
 
                 elif first_sell:
                     order_type = "SELL"
-                    market_tax = self.fond.btc * self.spread
+
                     total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest) * 0.05
                     if self.fond.sell_percent > 85:
                         renew = True
                         total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest)
                     else:
                         renew = False
-                    total_btc = self.fond.btc + total_amount * _value - market_tax
+                    total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * self.market.spread)
 
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)

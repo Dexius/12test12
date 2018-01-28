@@ -49,17 +49,18 @@ def main(ctx):
     init_db()
     config = Config(open(get_path_to_config(), "r"))
     # for attempt in range(1,3):
-    to_do = True
-    while to_do:
-        try:
-            ctx.exchange = Poloniex(config, ctx.nonce)
-            to_do = False
-        except Exception as ex:
-            if str(ex).split(" "):
-                if str(ex).split(" ")[0] == 'Nonce':
-                    ctx.nonce = int(str(ex).split(" ")[5][:-1]) + 1
-            click.echo(ex)
-            time.sleep(1)
+    # to_do = True
+    # while to_do:
+    #     try:
+    ctx.exchange = Poloniex(config, ctx.nonce)
+    # to_do = False
+    # except Exception as ex:
+    #
+    #     if str(ex).split(" "):
+    #         if str(ex).split(" ")[0] == 'Nonce':
+    #             ctx.nonce = int(str(ex).split(" ")[5][:-1]) + 1
+    #     click.echo(ex)
+    #     time.sleep(1)
             # sys.exit(1)
 
 # Добавляем команды
@@ -111,7 +112,8 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
             best_pair["market"]._backtrade = False
             bot = get_bot(best_pair["market"], strategy, resolution, start, end, verbose, percent, automatic,
                           memory_only=False, btc=btc)
-            trade_to_minus = bot.start(backtest=False, automatic=automatic)
+            # trade_to_minus = bot.start(backtest=False, automatic=automatic)
+            trade_to_minus = bot.start(backtest=False, automatic=True)
             delete_bot(bot)
 
 
@@ -188,7 +190,7 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
     test_markets.append(set_market(ctx, market._name, backtrade=True))
     index = 0
     for current_market in test_markets:
-        if index > 5:
+        if index > 7:
             break
         bot = create_bot(current_market, strategy, resolution, start, end, verbose, percent, automatic=True, btc=btc)
         for trade in bot.trades:

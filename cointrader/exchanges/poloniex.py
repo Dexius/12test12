@@ -11,7 +11,6 @@ from functools import wraps
 import requests
 import datetime
 
-
 if (sys.version_info > (3, 0)):
     # Python 3 code in this block
     from urllib.parse import urlencode
@@ -31,6 +30,7 @@ class ApiError(ValueError):
 class Api(object):
 
     """Docstring for Api. """
+
 
     def __init__(self, config):
         api = config.api
@@ -154,6 +154,12 @@ def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
                     time.sleep(mdelay)
                     mtries -= 1
                     mdelay *= backoff
+                    if args:
+                        if type(args[0]).__name__ == 'Poloniex':
+                            if str(e).split(" "):
+                                if str(e).split(" ")[0] == 'Nonce':
+                                    args[0].nonce = int(str(e).split(" ")[5][:-1]) + 1
+
             return f(*args, **kwargs)
 
         return f_retry  # true decorator
@@ -252,6 +258,7 @@ class Poloniex(Api):
         self._check_response(result)
         return result
 
+    @retry(Exception, tries=4)
     def retry_book(self, params):
         r = reconnect("https://poloniex.com/public", params=params, headers=None, action="get")
         result = json.loads(r.content.decode())
@@ -307,10 +314,10 @@ class Poloniex(Api):
         """
         result = {}
         params = {"command": "returnCompleteBalances",
-                  "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
-                      (time.time() + 0.5) * 1000 * 1050)}
-        sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
-        headers = {"Key": self.key, "Sign": sign}
+                  # "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
+                  #     (time.time() + 0.5) * 1000 * 1050)}
+                  "nonce": self.nonce}
+        headers = self.prepaire_headers(params)
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
         r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
         tmp = json.loads(r.content.decode())
@@ -321,6 +328,11 @@ class Poloniex(Api):
             result[currency]["btc_value"] = float(tmp[currency]["btcValue"])
         return result
 
+    def prepaire_headers(self, params):
+        sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
+        headers = {"Key": self.key, "Sign": sign}
+        return headers
+
     @retry(Exception, tries=4)
     def buy(self, market, amount, price, option):
 
@@ -328,8 +340,9 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
-                      (time.time() + 0.5) * 1000 * 1050)}
+                  # "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
+                  #     (time.time() + 0.5) * 1000 * 1050)}
+                  "nonce": self.nonce}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1
@@ -338,8 +351,7 @@ class Poloniex(Api):
         elif option == "postOnly":
             params["postOnly"] = 1
 
-        sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
-        headers = {"Key": self.key, "Sign": sign}
+        headers = self.prepaire_headers(params)
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
         r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
         result = json.loads(r.content.decode())
@@ -353,8 +365,9 @@ class Poloniex(Api):
                   "currencyPair": market,
                   "rate": price,
                   "amount": amount,
-                  "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
-                      (time.time() + 0.5) * 1000 * 1050)}
+                  # "nonce": self.nonce if self.nonce >= int((time.time() + 0.5) * 1000 * 1050) else int(
+                  #     (time.time() + 0.5) * 1000 * 1050)}
+                  "nonce": self.nonce}
 
         if option == "fillOrKill":
             params["fillOrKill"] = 1
@@ -363,14 +376,12 @@ class Poloniex(Api):
         elif option == "postOnly":
             params["postOnly"] = 1
 
-        sign = hmac.new(self.secret, urlencode(params).encode(), hashlib.sha512).hexdigest()
-        headers = {"Key": self.key, "Sign": sign}
+        headers = self.prepaire_headers(params)
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
         r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
         result = json.loads(r.content.decode())
         self._check_response(result)
         return result
-
 
 def reconnect(link, params, headers=None, action="get"):
     import requests

@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="cointrader" uuid="b9f50a51-9bbc-4cfa-8244-7b67908bc62d">
+    <data-source source="LOCAL" name="cointrader.db" uuid="32b0675f-0ea9-40ae-b1b3-592c85ac9ea1">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
-      <imported>true</imported>
-      <remarks>SQLite</remarks>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:C:\Users\Администратор\PycharmProjects\cointrader\cointrader\cointrader.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/cointrader/cointrader.db</jdbc-url>
       <driver-properties>
         <property name="enable_load_extension" value="true" />
       </driver-properties>

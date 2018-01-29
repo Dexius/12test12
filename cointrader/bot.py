@@ -975,7 +975,8 @@ class Cointrader(Base):
                 elif self.verbose and signal.value == SELL and result == 'Sell':
                     print("Произведена полная продажа")
                 elif first_sell and result == 'Sell':
-                    print("Произведена частичная продажа")
+                    print(
+                        "Произведена частичная продажа" if self.fond.amount_btc == 0 else "Произведена полная продажа")
                 # elif self.verbose and result == 'Enough':
                 #     if signal.value == SELL:
                 #         print("Не достаточно средств. ПРОДАЖА аннулирована.")

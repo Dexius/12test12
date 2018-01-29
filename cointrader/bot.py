@@ -741,31 +741,11 @@ class Cointrader(Base):
                             self.detouch = True
                             return self.detouch
                 elif count % 6 == 0:
-                    self._strategy.trend = []
-                    trends_2h = self.trend_test(backtest, resolution="2h")
-                    trends_current = self.trend_test(backtest)
-                    self.trend = trends_current[-1]
-                    if len(trends_2h) > 3:
-                        if trends_2h[-1] == "Рынок ВВЕРХ":
-                            pass
-                        else:
-                            print("\nПоявился падающий тренд на 2 часом графике")
-                            self.detouch = True
-                            self.detouch_description = "Появился падающий тренд на 2 часом графике"
+                    self.check_trend(backtest)
 
             else:
-                # if count % 6 == 0:
-                #     self._strategy.trend = []
-                #     trends_2h = self.trend_test(backtest, resolution="2h")
-                #     trends_current = self.trend_test(backtest)
-                #     self.trend = trends_current[-1]
-                #     if len(trends_2h) > 3:
-                #         if trends_2h[-1] == "Рынок ВВЕРХ":
-                #                 pass
-                #         else:
-                #             print("\nПоявился падающий тренд на 2 часом графике")
-                #             self.detouch = True
-                #             self.detouch_description = "Появился падающий тренд на 2 часом графике"
+                if count % 6 == 0:
+                    self.check_trend(backtest)
 
                 chart = self._market.get_chart(self._resolution, None, None)
 
@@ -957,6 +937,21 @@ class Cointrader(Base):
             print()
 
         return self.detouch
+
+    def check_trend(self, backtest):
+        self._strategy.trend = []
+        print("----------------ЗАМЕР--------------------")
+        trends_2h = self.trend_test(backtest, resolution="2h")
+        trends_current = self.trend_test(backtest)
+        print("----------------ЗАМЕР--------------------")
+        self.trend = trends_current[-1]
+        if len(trends_2h) > 3:
+            if trends_2h[-1] == "Рынок ВВЕРХ":
+                pass
+            else:
+                print("\nПоявился падающий тренд на 2 часом графике")
+                self.detouch = True
+                self.detouch_description = "Появился падающий тренд на 2 часом графике"
 
     def process_signal(self, backtest, chart, first_sell, memory_only, signal):
         try:

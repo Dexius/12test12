@@ -721,9 +721,12 @@ class Cointrader(Base):
                 chart = self._market.get_chart(self._resolution, self._start, self._end)
 
                 if count == 0:
+                    old_stdout = sys.stdout
+                    sys.stdout = open(os.devnull, 'w')
                     self._strategy.trend = []
                     trends_2h = self.trend_test(backtest, resolution="2h")
                     trends_current = self.trend_test(backtest)
+                    sys.stdout = old_stdout
                     self.trend = trends_current[-1]
                     if len(trends_2h) > 3:
                         if trends_2h[-1] == "Рынок ВВЕРХ":

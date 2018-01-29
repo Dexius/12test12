@@ -71,7 +71,7 @@ class Market(object):
         internal_start = start - datetime.timedelta(seconds=period * MIN_POINTS)
         return self._exchange._api.chart(self._name, internal_start, end, period)
 
-    def get_chart(self, resolution="30m", start=None, end=None, last_numbers=None):
+    def get_chart(self, resolution="30m", start=None, end=None, last_numbers=None, new_only=False):
         """Will return a chart of the market.
 
         You can provide a `resolution` of the chart. On default the
@@ -91,10 +91,10 @@ class Market(object):
         if start is None:
             start = datetime.datetime.utcnow()
 
-        if self._chart_data is None and self._backtrade:
+        if self._chart_data is None and self._backtrade or new_only:
             self._chart_data = self._get_chart_data(resolution, start, end)
-            self._backtest_tick += MIN_POINTS
-            return Chart(self._chart_data[0:self._backtest_tick], start, end)
+            self._backtest_tick += MIN_POINTS if self._backtest_tick == 1 else 0
+            return Chart(self._chart_data[0:-1 if new_only else self._backtest_tick], start, end)
         elif self._backtrade and not last_numbers:
             return Chart(self._chart_data[0:self._backtest_tick], start, end)
         elif self._backtrade and last_numbers:

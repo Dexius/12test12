@@ -156,7 +156,7 @@ class Followtrend(Strategy):
 
         only_closes = []
         if backtest:
-            current_chart = chart.data[120 - 3:backtest_tick]
+            current_chart = chart.data[121 - abs(backtest_tick) if len(chart.data) > 121 else 0:backtest_tick]
         else:
             if len(chart.data) >= 2:
                 current_chart = chart.data[:-2]

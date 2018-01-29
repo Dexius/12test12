@@ -306,6 +306,7 @@ class Cointrader(Base):
 
         self.fond = asset_fond(market, percent=percent, btc=btc)
         self.detouch = False
+        self.detouch_description = ""
         self.profit = 0
         self.spread = 0.0
         self.spread_tick = 0.0
@@ -323,6 +324,7 @@ class Cointrader(Base):
             or (float(stat['profit_cointrader_before']) > float(stat['profit_cointrader'])
                 and 0 != float(stat['profit_cointrader_before'])):
             self.detouch = True
+            self.detouch_description = "Условие: выигрыш менее -3% или текущая продажа уменьшила выгрыш"
 
     def get_last_sell(self):
         for t in self.trades[::-1]:
@@ -721,22 +723,27 @@ class Cointrader(Base):
 
                 if count == 0:
                     self._strategy.trend = []
-                    for index in range(-5, -1):
-                        chart_all_period = self._market.get_chart(self._resolution, self._start, self._end,
-                                                                  last_numbers=index)
-                        signal = self._strategy.signal(chart_all_period, self.verbose, self.get_stop_limit(), backtest,
-                                                       index)
-                        print()
-                    trends = self._strategy.trend
-                    if len(trends) > 3:
-                        if trends[-1] == trends[-2] == trends[-3] == "Рынок ВВЕРХ":
-                            self.trend = trends[-1]
-                            print("\nПара не по времени.")
-                            self._strategy.trend = []
+                    trends_2h = self.trend_test(backtest, resolution="2h")
+                    trends_current = self.trend_test(backtest)
+                    self.trend = trends_current[-1]
+                    if len(trends_2h) > 3:
+                        if trends_2h[-1] == "Рынок ВВЕРХ":
+                            if trends_current[-1] == trends_current[-2] == trends_current[-3] == "Рынок  ВНИЗ":
+                                pass
+                            else:
+                                print("\nНе время для захода")
+                                self.detouch = True
+                                return self.detouch
+                        elif trends_2h[-1] == "Рынок  ВНИЗ":
+                            print("\n2-x часовой тренд падающий. Возможен проигрыш")
                             self.detouch = True
                             return self.detouch
-                        elif trends[-1] == trends[-2] == trends[-3] == "Рынок  ВНИЗ":
-                            self.trend = trends[-1]
+                        else:
+                            print("\n2-x часовой тренд изменился. Возможен проигрыш")
+                            self.detouch = True
+                            return self.detouch
+
+
 
 
             else:
@@ -969,6 +976,20 @@ class Cointrader(Base):
             print()
 
         return self.detouch
+
+    def trend_test(self, backtest, resolution=""):
+        self._strategy.trend = []
+        self._market.get_chart(self._resolution if resolution == "" else resolution, self._start, self._end,
+                               last_numbers=-1, new_only=True)
+        for index in range(-5, -1):
+            chart_all_period = self._market.get_chart(self._resolution if resolution == "" else resolution, self._start,
+                                                      self._end,
+                                                      last_numbers=index)
+            signal = self._strategy.signal(chart_all_period, self.verbose, self.get_stop_limit(), backtest,
+                                           index)
+            print()
+        trends = self._strategy.trend
+        return trends
 
     def first_sell(self, price):
         first_sell_in_it = False

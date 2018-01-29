@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import sys
 import datetime
 import time
@@ -24,7 +23,6 @@ log = logging.getLogger(__name__)
 
 MAKER_FEE = .0025
 TAKER_FEE = MAKER_FEE
-
 
 def replay_tradelog(trades, market, _market):
     btc = 0
@@ -321,10 +319,10 @@ class Cointrader(Base):
         """
 
         if float(stat['profit_cointrader']) < float(-3) \
-            or (float(stat['profit_cointrader_before']) > float(stat['profit_cointrader'])
+            or (abs(abs(float(stat['profit_cointrader_before'])) - abs(float(stat['profit_cointrader']))) > .5
                 and 0 != float(stat['profit_cointrader_before'])):
             self.detouch = True
-            self.detouch_description = "Условие: выигрыш менее -3% или текущая продажа уменьшила выгрыш"
+            self.detouch_description = "Условие: выигрыш менее -3% или текущая продажа уменьшила выгрыш более 0.5% за раз"
 
     def get_last_sell(self):
         for t in self.trades[::-1]:
@@ -742,11 +740,33 @@ class Cointrader(Base):
                             print("\n2-x часовой тренд изменился. Возможен проигрыш")
                             self.detouch = True
                             return self.detouch
-
-
-
+                elif count % 6 == 0:
+                    self._strategy.trend = []
+                    trends_2h = self.trend_test(backtest, resolution="2h")
+                    trends_current = self.trend_test(backtest)
+                    self.trend = trends_current[-1]
+                    if len(trends_2h) > 3:
+                        if trends_2h[-1] == "Рынок ВВЕРХ":
+                            pass
+                        else:
+                            print("\nПоявился падающий тренд на 2 часом графике")
+                            self.detouch = True
+                            self.detouch_description = "Появился падающий тренд на 2 часом графике"
 
             else:
+                # if count % 6 == 0:
+                #     self._strategy.trend = []
+                #     trends_2h = self.trend_test(backtest, resolution="2h")
+                #     trends_current = self.trend_test(backtest)
+                #     self.trend = trends_current[-1]
+                #     if len(trends_2h) > 3:
+                #         if trends_2h[-1] == "Рынок ВВЕРХ":
+                #                 pass
+                #         else:
+                #             print("\nПоявился падающий тренд на 2 часом графике")
+                #             self.detouch = True
+                #             self.detouch_description = "Появился падающий тренд на 2 часом графике"
+
                 chart = self._market.get_chart(self._resolution, None, None)
 
             signal = self._strategy.signal(chart, self.verbose, self.get_stop_limit(), backtest,
@@ -830,51 +850,8 @@ class Cointrader(Base):
                 """ TODO: """
 
             if signal:
-                try:
-                    #     if not self.active_trade_signal:
-                    #         self.active_trade_signal.append(signal.value)
+                self.process_signal(backtest, chart, first_sell, memory_only, signal)
 
-                    if signal.value not in (WAIT, QUIT) or first_sell:
-
-                        result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
-                                                     first_sell=first_sell)
-                        # self.active_trade_signal[0] = signal.value
-                        if self.verbose and signal.value == BUY and result == 'Buy':
-                            print("Произведена закупка")
-                        elif self.verbose and signal.value == SELL and result == 'Sell':
-                            print("Произведена полная продажа")
-                        elif first_sell and result == 'Sell':
-                            print("Произведена частичная продажа")
-                        # elif self.verbose and result == 'Enough':
-                        #     if signal.value == SELL:
-                        #         print("Не достаточно средств. ПРОДАЖА аннулирована.")
-                        #     if signal.value == BUY:
-                        #         print("Не достаточно средств. ПОКУПКА аннулирована.")
-
-                        # # Записываем текущий активный сигнал в *active_trade_signal*
-                        # self.active_trade_signal.append(signal.value)
-
-                except Exception as ex:
-                    # Выводим ошибку выполнения
-                    if self.verbose:
-                        print("Не могу разметить ордер: {}".format(ex))
-            #     log.error("Не могу разметить ордер: {}".format(ex))
-            #
-            #     # Пробую вычислить лимит сделки в BTC
-            #     try:
-            #         if signal.value == BUY or signal.value == SELL:
-            #             min_count_btc = float(str(ex).split(" ")[-1][:-1])
-            #             self._min_count_btc_deleted = min_count_btc
-            #
-            #             # Берем актуальную цену сделки
-            #             price = float(chart._data[-1]['close'])
-            #
-            #             # Устанавливаем минимальную цену сделки
-            #             self._min_count_currency_deleted = self._min_count_btc_deleted / price
-            #             self._min_count_currency_deleted = self._min_count_currency_deleted + self._min_count_currency_deleted * 0.02
-            #
-            #     except Exception as ex:
-            #         print("Ошибка: " + str(ex))
 
             if backtest:
 
@@ -967,6 +944,10 @@ class Cointrader(Base):
                 if self.fond.amount_btc:
                     signal = Signal(SELL, datetime.datetime.utcnow())
                     first_sell = False
+                    print("Так как сработал сигнал отключения бота продаю остатки по валюте")
+                    if signal:
+                        self.process_signal(backtest, chart, first_sell, memory_only, signal)
+
                 else:
                     print("\n Бот отключен")
                     break
@@ -976,6 +957,37 @@ class Cointrader(Base):
             print()
 
         return self.detouch
+
+    def process_signal(self, backtest, chart, first_sell, memory_only, signal):
+        try:
+            #     if not self.active_trade_signal:
+            #         self.active_trade_signal.append(signal.value)
+
+            if signal.value not in (WAIT, QUIT) or first_sell:
+
+                result = self._handle_signal(signal, backtest, chart, memory_only=memory_only,
+                                             first_sell=first_sell)
+                # self.active_trade_signal[0] = signal.value
+                if self.verbose and signal.value == BUY and result == 'Buy':
+                    print("Произведена закупка")
+                elif self.verbose and signal.value == SELL and result == 'Sell':
+                    print("Произведена полная продажа")
+                elif first_sell and result == 'Sell':
+                    print("Произведена частичная продажа")
+                # elif self.verbose and result == 'Enough':
+                #     if signal.value == SELL:
+                #         print("Не достаточно средств. ПРОДАЖА аннулирована.")
+                #     if signal.value == BUY:
+                #         print("Не достаточно средств. ПОКУПКА аннулирована.")
+
+                # # Записываем текущий активный сигнал в *active_trade_signal*
+                # self.active_trade_signal.append(signal.value)
+
+        except Exception as ex:
+            # Выводим ошибку выполнения
+            if self.verbose:
+                print("Не могу разметить ордер: {}".format(ex))
+            log.error("Не могу разметить ордер: {}".format(ex))
 
     def trend_test(self, backtest, resolution=""):
         self._strategy.trend = []

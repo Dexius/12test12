@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from cointrader import db, STRATEGIES
 from cointrader.config import Config, get_path_to_config
 from cointrader.exchange import Poloniex, Market
-from cointrader.bot import init_db, get_bot, create_bot, Active
+from cointrader.bot import init_db, get_bot, create_bot, Active, Bots_list
 
 # Создание лога
 logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG,
@@ -62,9 +62,10 @@ def main(ctx):
 @click.option("--best", help="", is_flag=False)
 @click.option("--searchpoint", help="", is_flag=False)
 @click.option("--btc", help="trading value of BTC", default=0.0, type=float)
+@click.option("--update_profit", help="Start circle updates profit list for bots", is_flag=False)
 # @click.option("--best_pass_nth", help="", default="0")
 @pass_context
-def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, searchpoint, btc):
+def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, searchpoint, btc, update_profit):
     """Start a new bot on the given market and the given amount of BTC"""
 
     # Build the market on which the bot will operate
@@ -88,7 +89,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
     start, end = set_start_end()
 
     best_pair, best_testing_market = find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy,
-                                                    verbose, searchpoint, btc)
+                                                    verbose, searchpoint, btc, update_profit)
 
     trade_to_minus = False
     # if int(best_pass_nth) == 0:
@@ -161,46 +162,67 @@ def is_active(market):
         return True
 
 
-def find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy, verbose, searchpoint, btc):
-    test_markets = []
-    bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False, btc=btc)
-    df = pd.DataFrame.from_dict(bot._market._exchange.markets, orient='index')
-    if len(df):
-        while not test_markets:
-            mask = (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 3)
-            test_markets = print_top_trends(ctx, df, market, backtrade=False, searchpoint=searchpoint, mask=mask)
-            if not test_markets:
-                time.sleep(1)
-                print("Ищу пары по условию: (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 3)")
+def find_best_pair(automatic, ctx, end, market, percent, resolution, start, strategy, verbose, searchpoint, btc,
+                   update_profit=False):
+    to_do = True
+    while to_do:
 
-    delete_bot(bot)
-    best_testing_market = []
-    test_markets.append(set_market(ctx, market._name, backtrade=True))
-    index = 0
-    for current_market in test_markets:
-        if index > 7:
-            break
-        bot = create_bot(current_market, strategy, resolution, start, end, verbose, percent, automatic=True, btc=btc)
-        for trade in bot.trades:
-            try:
-                if trade != bot.trades[0]:
-                    db.delete(trade)
-            except:
-                pass
-        if bot.spread > 0.5:
-            print("Валюта {} имеет порог покупки {:.2f}%, будет пропущена.".format(bot._market.currency, bot.spread))
-            continue
+        test_markets = []
+        bot = get_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only=False, btc=btc)
+        df = pd.DataFrame.from_dict(bot._market._exchange.markets, orient='index')
+        if len(df):
+            while not test_markets:
+                if update_profit:
+                    mask = (df['volume'] > 50)
+                else:
+                    mask = (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 3)
+                test_markets = print_top_trends(ctx, df, market, backtrade=False, searchpoint=searchpoint, mask=mask)
+                if not test_markets:
+                    time.sleep(1)
+                    if update_profit:
+                        print("Ищу пары по условию: (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 15)")
+                    else:
+                        print("Ищу пары по условию: (df['volume'] > 50) & (df['change'] > -15) & (df['change'] < 3)")
 
-        bot.start(backtest=True, automatic=True)
         delete_bot(bot)
-        if bot.profit > 3 and bot.trend != 'Рынок ВВЕРХ':
-            best_testing_market.append({"market": bot._market, "profit": bot.profit})
-            if not is_active(bot._market):
+        best_testing_market = []
+        test_markets.append(set_market(ctx, market._name, backtrade=True))
+        index = 0
+        for current_market in test_markets:
+            if index > 7 and not update_profit:
                 break
-            index += 1
-    from operator import itemgetter
-    best_testing_market = sorted(best_testing_market, key=itemgetter('profit'), reverse=True)
-    best_pair = best_markets_print(best_testing_market)
+            bot = create_bot(current_market, strategy, resolution, start, end, verbose, percent, automatic=True,
+                             btc=btc)
+            for trade in bot.trades:
+                try:
+                    if trade != bot.trades[0]:
+                        db.delete(trade)
+                except:
+                    pass
+            if bot.spread > 0.5:
+                print(
+                    "Валюта {} имеет порог покупки {:.2f}%, будет пропущена.".format(bot._market.currency, bot.spread))
+                continue
+
+            bot.start(backtest=True, automatic=True)
+            delete_bot(bot)
+            if bot.profit > 3 and bot.trend != 'Рынок ВВЕРХ':
+                best_testing_market.append({"market": bot._market, "profit": bot.profit})
+                if not is_active(bot._market) and not update_profit:
+                    break
+                index += 1
+        from operator import itemgetter
+        best_testing_market = sorted(best_testing_market, key=itemgetter('profit'), reverse=True)
+        best_pair = best_markets_print(best_testing_market)
+        if update_profit and best_testing_market:
+            bots_list = Bots_list('list =' + str(best_testing_market))
+            exec(bots_list)
+            db.add(bots_list)
+            db.commit
+        else:
+            to_do = False
+
+
     return best_pair, best_testing_market
 
 
@@ -226,7 +248,7 @@ def print_top_trends(ctx, df, market, backtrade, searchpoint, mask):
     df['change'] = df.change.astype(float)
     df['volume'] = df.volume.astype(float)
     df_filtered = df[mask]
-    df_filtered = df_filtered.sort_values(by=['change'], ascending=searchpoint)
+    df_filtered = df_filtered.sort_values(by=['change'], ascending=True)
     test_markets = []
     out = [["ПАРА", "ОБЪЕМ", "ИЗМЕНЕНИЯ"]]
     for current_market, row in df_filtered.iterrows():

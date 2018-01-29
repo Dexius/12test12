@@ -264,6 +264,21 @@ class Active(Base):
         self.bot_id = sa.Column(sa.Integer, sa.ForeignKey('bots.id'))
 
 
+class Bots_list(Base):
+    """Back traded list for bots saved in the database for statistics and get freshen list"""
+    __tablename__ = "bot_list"
+    id = sa.Column(sa.Integer, primary_key=True)
+    date = sa.Column(sa.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    profit_list = sa.Column(sa.String, nullable=False, default=[])
+
+    def __init__(self, profit_list, date=datetime.datetime.now()):
+
+        if not isinstance(date, datetime.datetime):
+            self.date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+        else:
+            self.date = date
+        self.profit_list = profit_list
+
 class Cointrader(Base):
     """Cointrader"""
     __tablename__ = "bots"
@@ -576,9 +591,9 @@ class Cointrader(Base):
                     click.echo(render_bot_statistic(self, self.stat()))
                 elif first_sell:
                     if 30 < self.fond.sell_percent < 90:
-                        part = 0.3
+                        part = 0.34
                     else:
-                        part = 0.1
+                        part = 0.13
                     total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest) * part
                     closing = chart.values()
                     _value = closing[-1][1]
@@ -623,8 +638,7 @@ class Cointrader(Base):
                     order_type = "SELL"
                     total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest)
                     spread = self._market._exchange.get_spread(self.market) * .01
-                    total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread) \
-                                - (total_amount * _value * TAKER_FEE)
+                    total_btc = total_amount * _value - (total_amount * _value * (spread + TAKER_FEE))
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
 
@@ -642,17 +656,16 @@ class Cointrader(Base):
 
                 elif first_sell:
                     order_type = "SELL"
-
-                    total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest) * 0.05
-                    if self.fond.sell_percent > 85:
+                    if 30 < self.fond.sell_percent < 90:
+                        part = 0.34
                         renew = True
-                        total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest)
                     else:
+                        part = 0.13
                         renew = False
 
+                    total_amount = self.fond.get_amount_btc(self.fond.amount_btc, backtest=backtest) * part
                     spread = self._market._exchange.get_spread(self.market) * .01
-                    total_btc = self.fond.btc + total_amount * _value - (total_amount * _value * spread) \
-                                - (total_amount * _value * TAKER_FEE)
+                    total_btc = total_amount * _value - (total_amount * _value * (spread + TAKER_FEE))
 
                     trade = Trade(_date, order_type, '22222222', '222222222', self._market._name, _value,
                                   btc_taxed=0, btc=total_btc, amount_taxed=0, amount=total_amount)
@@ -734,12 +747,14 @@ class Cointrader(Base):
             closing = chart.values()
             _value = closing[-1][1]
 
-            if signal.value == QUIT and (0 < len(self.trades) <= 1):
-                print("\nПараметры покупки не удовлетворительны. Отключаю бота.")
-                self.detouch = True
-                break
+            # if signal.value == QUIT and (0 < len(self.trades) <= 1):
+            #     print("\nПараметры покупки не удовлетворительны. Отключаю бота.")
+            #     self.detouch = True
+            #     self._strategy.buy_tick = 0
+            #     self._strategy.buy_tick_enable = False
+            #     break
 
-            first_sell = self.fond.amount_btc > 0 and (self.first_sell(_value) or signal.over_sell)
+            first_sell = self.fond.amount_btc > 0 and (self.first_sell(_value) or signal.over_sell or signal.max_up)
             if signal.value == BUY:
                 first_sell = False
             # if self.verbose:
@@ -940,6 +955,8 @@ class Cointrader(Base):
             stat = self.stat(memory_only)
             self.check_stop(stat)
             if self.detouch:
+                self._strategy.buy_tick = 0
+                self._strategy.buy_tick_enable = False
                 if self.fond.amount_btc:
                     signal = Signal(SELL, datetime.datetime.utcnow())
                     first_sell = False

@@ -19,18 +19,58 @@ else:
     from urllib import urlencode
 
 
-def totimestamp(dt):
-    td = dt - datetime.datetime(1970, 1, 1)
-    # return td.total_seconds()
-    return int((td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6)
+def retry(ExceptionToCheck, tries=10, delay=1, backoff=2, logger=None):
+    """Retry calling the decorated function using an exponential backoff.
 
-class ApiError(ValueError):
-    pass
+    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
+    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
+
+    :param ExceptionToCheck: the exception to check. may be a tuple of
+        exceptions to check
+    :type ExceptionToCheck: Exception or tuple
+    :param tries: number of times to try (not retry) before giving up
+    :type tries: int
+    :param delay: initial delay between retries in seconds
+    :type delay: int
+    :param backoff: backoff multiplier e.g. value of 2 will double the delay
+        each retry
+    :type backoff: int
+    :param logger: logger to use. If None, print
+    :type logger: logging.Logger instance
+    """
+
+    def deco_retry(f):
+
+        @wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+            while mtries > 1:
+                try:
+                    return f(*args, **kwargs)
+                except ExceptionToCheck as e:
+                    msg = "%s, Retrying in %d seconds..." % (str(e), mdelay)
+                    if logger:
+                        logger.warning(msg)
+                    else:
+                        print(msg)
+                    time.sleep(mdelay)
+                    mtries -= 1
+                    mdelay *= backoff
+                    if args:
+                        if type(args[0]).__name__ == 'Poloniex':
+                            if str(e).split(" "):
+                                if str(e).split(" ")[0] == 'Nonce':
+                                    args[0].nonce = int(str(e).split(" ")[5][:-1]) + int(mdelay)
+
+            return f(*args, **kwargs)
+
+        return f_retry  # true decorator
+
+    return deco_retry
+
 
 class Api(object):
-
     """Docstring for Api. """
-
 
     def __init__(self, config):
         api = config.api
@@ -117,59 +157,14 @@ class Api(object):
         raise NotImplementedError()
 
 
-def retry(ExceptionToCheck, tries=10, delay=1, backoff=2, logger=None):
-    """Retry calling the decorated function using an exponential backoff.
-
-    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
-    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
-
-    :param ExceptionToCheck: the exception to check. may be a tuple of
-        exceptions to check
-    :type ExceptionToCheck: Exception or tuple
-    :param tries: number of times to try (not retry) before giving up
-    :type tries: int
-    :param delay: initial delay between retries in seconds
-    :type delay: int
-    :param backoff: backoff multiplier e.g. value of 2 will double the delay
-        each retry
-    :type backoff: int
-    :param logger: logger to use. If None, print
-    :type logger: logging.Logger instance
-    """
-
-    def deco_retry(f):
-
-        @wraps(f)
-        def f_retry(*args, **kwargs):
-            mtries, mdelay = tries, delay
-            while mtries > 1:
-                try:
-                    return f(*args, **kwargs)
-                except ExceptionToCheck as e:
-                    msg = "%s, Retrying in %d seconds..." % (str(e), mdelay)
-                    if logger:
-                        logger.warning(msg)
-                    else:
-                        print(msg)
-                    time.sleep(mdelay)
-                    mtries -= 1
-                    mdelay *= backoff
-                    if args:
-                        if type(args[0]).__name__ == 'Poloniex':
-                            if str(e).split(" "):
-                                if str(e).split(" ")[0] == 'Nonce':
-                                    args[0].nonce = int(str(e).split(" ")[5][:-1]) + 2
-
-            return f(*args, **kwargs)
-
-        return f_retry  # true decorator
-
-    return deco_retry
+class ApiError(ValueError):
+    pass
 
 
 class Poloniex(Api):
     MAKER_FEE = 0.0025
     TAKER_FEE = 0.0025
+
     # So-called maker-taker fees offer a transaction rebate to those who
     # provide liquidity (the market maker), while charging customers who
     # take that liquidity. The chief aim of maker-taker fees is to stimulate
@@ -204,7 +199,7 @@ class Poloniex(Api):
         """
         params = {"command": "returnTicker"}
         # r = requests.get("https://poloniex.com/public", params=params)
-        r = reconnect("https://poloniex.com/public",params=params, headers=None, action="get")
+        r = reconnect("https://poloniex.com/public", params=params, headers=None, action="get")
         result = json.loads(r.content.decode())
         self._check_response(result)
         if currency:
@@ -226,7 +221,7 @@ class Poloniex(Api):
         """
         params = {"command": "return24hVolume"}
         # r = requests.get("https://poloniex.com/public", params=params)
-        r = reconnect("https://poloniex.com/public",params=params, headers=None, action="get")
+        r = reconnect("https://poloniex.com/public", params=params, headers=None, action="get")
         result = json.loads(r.content.decode())
         self._check_response(result)
         if currency:
@@ -301,7 +296,7 @@ class Poloniex(Api):
                   "period": period}
 
         # r = requests.get("https://poloniex.com/public", params=params)
-        r = reconnect("https://poloniex.com/public",params=params, headers=None, action="get")
+        r = reconnect("https://poloniex.com/public", params=params, headers=None, action="get")
         result = json.loads(r.content.decode())
         self._check_response(result)
         return result
@@ -319,7 +314,7 @@ class Poloniex(Api):
                   "nonce": self.nonce}
         headers = self.prepaire_headers(params)
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
-        r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
+        r = reconnect("https://poloniex.com/tradingApi", params=params, headers=headers, action="post")
         tmp = json.loads(r.content.decode())
         self._check_response(tmp)
         for currency in tmp:
@@ -353,7 +348,7 @@ class Poloniex(Api):
 
         headers = self.prepaire_headers(params)
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
-        r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
+        r = reconnect("https://poloniex.com/tradingApi", params=params, headers=headers, action="post")
         result = json.loads(r.content.decode())
         self._check_response(result)
         return result
@@ -378,10 +373,11 @@ class Poloniex(Api):
 
         headers = self.prepaire_headers(params)
         # r = requests.post("https://poloniex.com/tradingApi", data=params, headers=headers)
-        r = reconnect("https://poloniex.com/tradingApi",params=params, headers=headers, action="post")
+        r = reconnect("https://poloniex.com/tradingApi", params=params, headers=headers, action="post")
         result = json.loads(r.content.decode())
         self._check_response(result)
         return result
+
 
 def reconnect(link, params, headers=None, action="get"):
     import requests
@@ -401,3 +397,8 @@ def reconnect(link, params, headers=None, action="get"):
     elif action == "post":
         return session.post(link, data=params, headers=headers)
 
+
+def totimestamp(dt):
+    td = dt - datetime.datetime(1970, 1, 1)
+    # return td.total_seconds()
+    return int((td.microseconds + (td.seconds + td.days * 86400) * 10 ** 6) / 10 ** 6)

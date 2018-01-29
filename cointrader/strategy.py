@@ -64,6 +64,8 @@ class Followtrend(Strategy):
         self.verbose = False
         self.EMA = []
         self.trend = []
+        self.buy_tick = 0
+        self.buy_tick_enable = False
 
     def signal(self, chart, verbose=False, first_buy_price=1000000, backtest=False, backtest_tick=0):
 
@@ -98,10 +100,6 @@ class Followtrend(Strategy):
         good_to_sell = (list_wr[-1] > 63 and first_buy_price < self._value)
         good_to_buy = list[-1] < 63 and list_dmi[-1] > 20
 
-
-        # if self._macd == BUY and dc_signal.value == BUY:
-        #     print("----->{}".format(list[-1]))
-
         if (self.EMA[-2] >= 0 > self.EMA[-1] or self.EMA[-2] < 0 <= self.EMA[-1]) \
             and ((self._macd == BUY and dc_signal.value == BUY and good_to_buy)
                 or
@@ -118,8 +116,31 @@ class Followtrend(Strategy):
         else:
             signal = Signal(WAIT, dc_signal.date)
 
-        # if self.verbose:
-        #     print("Итоговый сигнал @{}: {}".format(signal.date, signal.value), end="\n")
+        # Проба:
+        """        
+        check = (self.EMA[-2] >= 0 > self.EMA[-1] or self.EMA[-2] < 0 <= self.EMA[-1])
+        if check and ((self._macd == BUY and dc_signal.value == BUY and good_to_buy)
+                      or (self._macd == SELL and dc_signal.value == SELL)) \
+            or (self.EMA[-2] >= self.EMA[-1] and (self._macd == BUY and dc_signal.value == BUY and good_to_buy)):
+            if dc_signal.value == BUY and check and good_to_buy:
+                signal = Signal(WAIT, dc_signal.date)
+                self.buy_tick = 0
+                self.buy_tick_enable = True
+            elif self.buy_tick >= 1 and dc_signal.value == BUY and good_to_buy:
+                signal = dc_signal
+                self.buy_tick = 0
+                self.buy_tick_enable = False
+            elif dc_signal.value == BUY and not check and good_to_buy:
+                if self.buy_tick_enable:
+                    self.buy_tick += 1
+                signal = Signal(WAIT, dc_signal.date)
+            elif dc_signal.value == SELL and check:
+                self.buy_tick = 0
+                self.buy_tick_enable = False
+                signal = dc_signal
+            else:
+                signal = Signal(WAIT, dc_signal.date)
+                """
 
         log.debug("P: {:.5f} MACD+DC {}: {}".format(self._value, signal.date, signal.value))
         self.signals["DC"] = signal
@@ -155,6 +176,7 @@ class Followtrend(Strategy):
                     last_max = max(last_max)
                     if current_price > last_max:
                         report = report + "Пробитие локального МАКСИМУМА "
+                        signal.max_up = True
 
             if last_min:
                 if len(last_min) == 1:
@@ -167,7 +189,6 @@ class Followtrend(Strategy):
         if report:
             print(report, end=" ", flush=True)
 
-
         return signal
 
     """
@@ -176,6 +197,7 @@ class Followtrend(Strategy):
     Design an algorithm to find all local maxima and mimima if they exist.
     Example:  for 3, 2, 4, 1 the local maxima are at indices 0 and 2.  
     """
+
     def FindMaximaMinima(self, numbers: list):
 
         maxima = []
@@ -199,4 +221,3 @@ class Followtrend(Strategy):
             elif numbers[length - 1] < numbers[length - 2]:
                 minima.append(numbers[length - 1])
         return maxima, minima
-

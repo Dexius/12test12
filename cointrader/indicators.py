@@ -27,11 +27,12 @@ SELL_ZONE = 0
 
 class Signal(object):
 
-    def __init__(self, signal, date, details=None, over_sell=False):
+    def __init__(self, signal, date, details=None, over_sell=False, max_up=False):
         self.value = signal
         self.date = date
         self.details = details
         self.over_sell = over_sell
+        self.max_up = max_up
 
     @property
     def buy(self):

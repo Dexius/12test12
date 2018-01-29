@@ -214,15 +214,7 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     amount_before = bot.fond.amount_btc
     end, start = set_start_end(end, 1, start)
 
-    try:
-        for active in bot.activity:
-            db.delete(active)
-        for current_trade in bot.trades:
-            db.delete(current_trade)
-        db.delete(bot)
-        db.commit()
-    finally:
-        pass
+    delete_bot(bot)
 
     best_testing_market = []
     test_markets.append(set_market(backtest, ctx, end, market._name, start))
@@ -236,15 +228,7 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
             except:
                 pass
         bot.start(backtest=True, automatic=True)
-        try:
-            for active in bot.activity:
-                db.delete(active)
-            for current_trade in bot.trades:
-                db.delete(current_trade)
-            db.delete(bot)
-            db.commit()
-        finally:
-            pass
+        delete_bot(bot)
         best_testing_market.append({"market": current_market._name, "profit": bot.profit})
 
     bot = get_bot(market, strategy, resolution, start, end, btc, coins, fixcoin, verbose, percent, automatic,
@@ -276,8 +260,8 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     table = AsciiTable(out).table
     print("\n".join(["\nПрибыльные пары:", table]))
 
-    if best_pair != None:
-        print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"], best_pair["profit"]))
+    # if best_pair != None:
+    #     print("\nВыбрана пара: %s, заработок: %f" % (best_pair["market"], best_pair["profit"]))
 
         # market = set_market(backtest, ctx, end, best_pair['market'], start)
         # bot = get_bot(market, strategy, resolution, start, end, _btc_deleted, coins, fixcoin, verbose, _percent_deleted, automatic, memory_only=False)
@@ -290,15 +274,29 @@ def start(ctx, market, resolution, start, end, automatic, backtest, papertrade, 
     if backtest:
         click.echo(render_bot_tradelog(bot.trades))
         click.echo(render_bot_statistic(bot, bot.stat(True)))
-        try:
-            for active in bot.activity:
-                db.delete(active)
-            for current_trade in bot.trades:
-                db.delete(current_trade)
-            db.delete(bot)
-            db.commit()
-        finally:
-            pass
+        # try:
+        #     for active in bot.activity:
+        #         db.delete(active)
+        #     for current_trade in bot.trades:
+        #         db.delete(current_trade)
+        #     db.delete(bot)
+        #     db.commit()
+        # finally:
+        #     pass
+
+    delete_bot(bot)
+
+
+def delete_bot(bot):
+    try:
+        for active in bot.activity:
+            db.delete(active)
+        for current_trade in bot.trades:
+            db.delete(current_trade)
+        db.delete(bot)
+        db.commit()
+    finally:
+        pass
 
 
 def set_market(backtest, ctx, end, market, start):

@@ -106,7 +106,7 @@ def start(ctx, market, resolution, automatic, strategy, verbose, percent, best, 
             delete_bot(bot)
 
 
-    elif best_testing_market[-1]["profit"] > 3 and not best and not is_active(best_testing_market[-1]["market"]):
+    elif best_testing_market[-1]["profit"] > 1 and not best and not is_active(best_testing_market[-1]["market"]):
         best_testing_market[-1]["market"]._backtrade = False
         bot = get_bot(best_testing_market[-1]["market"], strategy, resolution, start, end, verbose, percent, automatic,
                       memory_only=False, btc=btc)
@@ -206,7 +206,7 @@ def find_best_pair(automatic, ctx, end, market, percent, resolution, start, stra
 
             bot.start(backtest=True, automatic=True)
             delete_bot(bot)
-            if bot.profit > 3 and bot.trend != 'Рынок ВВЕРХ':
+            if bot.profit > 1 and bot.trend != 'Рынок ВВЕРХ':
                 best_testing_market.append({"market": bot._market, "profit": bot.profit})
                 if not is_active(bot._market) and not update_profit:
                     break

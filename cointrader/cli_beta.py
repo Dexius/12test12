@@ -150,6 +150,7 @@ def delete_bot(bot):
             db.delete(current_trade)
         db.delete(bot)
         db.commit()
+        del bot
     finally:
         pass
 

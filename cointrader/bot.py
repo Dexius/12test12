@@ -179,9 +179,9 @@ def get_bot(market, strategy, resolution, start, end, verbose, percent, automati
 
     if percent == None:
         percent = 100
-    bot = load_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only, btc)
-    if bot is None:
-        bot = create_bot(market, strategy, resolution, start, end, verbose, percent, automatic, btc)
+    # bot = load_bot(market, strategy, resolution, start, end, verbose, percent, automatic, memory_only, btc)
+    # if bot is None:
+    bot = create_bot(market, strategy, resolution, start, end, verbose, percent, automatic, btc)
 
     return bot
 

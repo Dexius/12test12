@@ -279,7 +279,7 @@ def set_market(ctx, market, backtrade):
 def set_start_end():
     try:
         now_time = datetime.now()
-        delta = timedelta(days=1)
+        delta = timedelta(days=1.5)
         date_N_days_ago = now_time - delta
 
         start = date_N_days_ago
